@@ -4,11 +4,7 @@
 
 Bingo is an Android app built with Kotlin and Jetpack Compose.
 
-Use the repository root as the working directory:
-
-```powershell
-D:\A_Project\App2026\bingo
-```
+Run commands from the repository root. Do not assume the repository is checked out to a fixed drive or directory.
 
 Important paths:
 
@@ -44,7 +40,7 @@ If a file must be deleted, delete only one explicitly named file at a time.
 Correct example:
 
 ```powershell
-Remove-Item "C:\path\to\file.txt"
+Remove-Item -LiteralPath "path\to\file.txt"
 ```
 
 ### Error handling
@@ -85,35 +81,36 @@ After making changes, summarize:
 
 ## Android Workflow
 
-Use the bundled Android Studio JBR when running Gradle from this environment:
+Use a JDK compatible with the Gradle version in this project. Prefer the active `JAVA_HOME` if it points to JDK 17 or newer. If `JAVA_HOME` is not set, use the JDK bundled with the local Android Studio installation or another locally installed JDK 17+.
 
 ```powershell
-$env:JAVA_HOME='D:\Android\Android Studio\jbr'
-$env:PATH="$env:JAVA_HOME\bin;$env:PATH"
 .\gradlew.bat assembleDebug "-Dkotlin.compiler.execution.strategy=in-process"
 ```
 
-The Kotlin daemon may report an `AccessDeniedException` for `C:\Users\LL\AppData\Local\kotlin\daemon\...` in this environment. If Gradle falls back and the build finishes with `BUILD SUCCESSFUL`, treat it as a non-blocking local daemon permission issue.
+The Kotlin daemon may report an `AccessDeniedException` under the current user's local Kotlin daemon directory. If Gradle falls back and the build finishes with `BUILD SUCCESSFUL`, treat it as a non-blocking local daemon permission issue.
 
-To run on the emulator, use the Android SDK from `local.properties`:
+To run on the emulator, read the Android SDK path from `local.properties` instead of hardcoding a machine-specific SDK directory:
 
 ```powershell
-D:\Users\LL\AppData\Local\Android\Sdk
+$sdkDir = (Get-Content -LiteralPath local.properties |
+    Where-Object { $_ -like 'sdk.dir=*' } |
+    Select-Object -First 1).Substring(8).Replace('\:', ':').Replace('\\', '\')
 ```
 
-Current preferred virtual device:
+List available virtual devices and use whichever AVD exists on the current machine:
 
 ```powershell
-Pixel_10
+& "$sdkDir\emulator\emulator.exe" -list-avds
 ```
 
 Useful commands:
 
 ```powershell
-$adb='D:\Users\LL\AppData\Local\Android\Sdk\platform-tools\adb.exe'
+$adb = "$sdkDir\platform-tools\adb.exe"
 & $adb devices -l
-& $adb -s emulator-5554 install -r "app\build\outputs\apk\debug\app-debug.apk"
-& $adb -s emulator-5554 shell am start -n com.bingo.app/.MainActivity
+$serial = ((& $adb devices | Select-String -Pattern '^(emulator-\d+)\s+device').Matches[0].Groups[1].Value)
+& $adb -s $serial install -r "app\build\outputs\apk\debug\app-debug.apk"
+& $adb -s $serial shell am start -n com.bingo.app/.MainActivity
 ```
 
 If adb reports `device offline` repeatedly, first try low-risk reconnect steps:
