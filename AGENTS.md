@@ -97,18 +97,20 @@ $sdkDir = (Get-Content -LiteralPath local.properties |
     Select-Object -First 1).Substring(8).Replace('\:', ':').Replace('\\', '\')
 ```
 
-List available virtual devices and use whichever AVD exists on the current machine:
+The development emulator is expected to be named `Pixel_10` on both company and home machines. Its adb serial is expected to be `emulator-5554`.
+
+Start the emulator if it is not already running:
 
 ```powershell
-& "$sdkDir\emulator\emulator.exe" -list-avds
+& "$sdkDir\emulator\emulator.exe" -avd Pixel_10
 ```
 
 Useful commands:
 
 ```powershell
 $adb = "$sdkDir\platform-tools\adb.exe"
+$serial = "emulator-5554"
 & $adb devices -l
-$serial = ((& $adb devices | Select-String -Pattern '^(emulator-\d+)\s+device').Matches[0].Groups[1].Value)
 & $adb -s $serial install -r "app\build\outputs\apk\debug\app-debug.apk"
 & $adb -s $serial shell am start -n com.bingo.app/.MainActivity
 ```
