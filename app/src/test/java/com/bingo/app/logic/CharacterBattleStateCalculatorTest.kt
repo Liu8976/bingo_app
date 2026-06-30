@@ -8,11 +8,11 @@ import org.junit.Test
 
 class CharacterBattleStateCalculatorTest {
     @Test
-    fun zeroMinutesMapsToLazyAndSleepy() {
+    fun zeroMinutesMapsToNormalStates() {
         val state = CharacterBattleStateCalculator.calculate(MockBingoData.todaySummary(0))
 
-        assertEquals(FatMonsterState.Lazy, state.fatMonsterState)
-        assertEquals(MuscleBuddyState.Sleepy, state.muscleBuddyState)
+        assertEquals(FatMonsterState.Normal, state.fatMonsterState)
+        assertEquals(MuscleBuddyState.Normal, state.muscleBuddyState)
         assertEquals("脂肪怪正在嚣张", state.battleTitle)
     }
 

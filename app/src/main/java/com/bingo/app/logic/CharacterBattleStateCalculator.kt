@@ -16,8 +16,8 @@ object CharacterBattleStateCalculator {
 
         return when (summary.exerciseMinutes) {
             0 -> CharacterBattleState(
-                fatMonsterState = FatMonsterState.Lazy,
-                muscleBuddyState = MuscleBuddyState.Sleepy,
+                fatMonsterState = FatMonsterState.Normal,
+                muscleBuddyState = MuscleBuddyState.Normal,
                 fatMonsterHealthPercent = 100,
                 muscleGrowthValue = 0,
                 fatMonsterBubbleText = "今天不动？那我可就住下了。",
