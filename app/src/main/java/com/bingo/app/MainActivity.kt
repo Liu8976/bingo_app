@@ -40,7 +40,7 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun BingoApp() {
     var selectedTab by remember { mutableStateOf(BingoTab.Today) }
-    var debugMinutes by remember { mutableIntStateOf(25) }
+    var debugMinutes by remember { mutableIntStateOf(0) }
     val summary = MockBingoData.todaySummary(debugMinutes)
     val battleState = CharacterBattleStateCalculator.calculate(summary)
 

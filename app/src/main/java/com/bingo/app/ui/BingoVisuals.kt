@@ -2,9 +2,12 @@ package com.bingo.app.ui
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
@@ -37,6 +40,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
@@ -48,6 +52,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.bingo.app.R
@@ -127,7 +132,13 @@ fun HomeScreen(
         item { DebugStateSwitcher(selectedMinutes = debugMinutes, onSelected = onDebugMinutesChanged) }
         item { DailyTaskCard(summary = summary) }
         item { HomeSummaryCards(summary = summary) }
-        item { PrimaryGradientButton(text = battleState.primaryButtonText, modifier = Modifier.fillMaxWidth()) }
+        item {
+            if (battleState.primaryButtonText == "开始今日反击") {
+                HomeStartButton(modifier = Modifier.fillMaxWidth())
+            } else {
+                PrimaryGradientButton(text = battleState.primaryButtonText, modifier = Modifier.fillMaxWidth())
+            }
+        }
         item { ReminderCard(text = battleState.reminderText) }
     }
 }
@@ -356,20 +367,20 @@ private fun TodayBattleCard(summary: TodayFitnessSummary, state: CharacterBattle
                 state.fatMonsterState,
                 modifier = Modifier
                     .align(Alignment.TopStart)
-                    .padding(top = 35.dp, start = 55.dp)
-                    .width(128.dp)
-                    .height(128.dp)
+                    .padding(top = 40.dp, start = 40.dp)
+                    .width(115.dp)
+                    .height(115.dp)
             )
             MuscleBuddyView(
                 state.muscleBuddyState,
                 modifier = Modifier
                     .align(Alignment.TopEnd)
-                    .padding(top = 40.dp, end = 60.dp)
+                    .padding(top = 40.dp, end = 40.dp)
                     .width(115.dp)
                     .height(115.dp)
             )
             Image(
-                painter = painterResource(R.drawable.vs),
+                painter = painterResource(R.drawable.today_vs),
                 contentDescription = "VS",
                 modifier = Modifier
                     .align(Alignment.TopCenter)
@@ -378,30 +389,32 @@ private fun TodayBattleCard(summary: TodayFitnessSummary, state: CharacterBattle
                     .height(81.dp),
                 contentScale = ContentScale.FillBounds
             )
-            SpeechBubble(
-                "才40分钟？我还能嘴硬。",
-                Color.White,
-                AppColors.BorderWarm,
+            BattleImageBubble(
+                text = state.fatMonsterBubbleText,
+                bubbleResId = R.drawable.fat_monster_bubble,
                 Modifier
                     .align(Alignment.TopStart)
-                    .padding(start = 5.dp, top = 30.dp)
+                    .padding(start = 10.dp, top = 10.dp)
                     .width(90.dp),
                 horizontalPadding = 6.dp,
-                verticalPadding = 6.dp
+                verticalPadding = 6.dp,
+                textOffsetY = (-3).dp,
+                textAlign = TextAlign.Start
             )
-            SpeechBubble(
-                "别听它的，它已经开始喘了。",
-                Color.White,
-                AppColors.GrowthGreen.copy(alpha = 0.46f),
+            BattleImageBubble(
+                text = state.muscleBuddyBubbleText,
+                bubbleResId = R.drawable.muscle_buddy_bubble,
                 Modifier
                     .align(Alignment.TopEnd)
-                    .padding(end = 5.dp, top = 30.dp)
+                    .padding(end = 10.dp, top = 10.dp)
                     .width(90.dp),
                 horizontalPadding = 6.dp,
-                verticalPadding = 6.dp
+                verticalPadding = 6.dp,
+                textOffsetY = (-3).dp,
+                textAlign = TextAlign.Start
             )
             Column(
-                modifier = Modifier.padding(start = 10.dp, top = 10.dp, end = 10.dp, bottom = 4.dp),
+                modifier = Modifier.padding(start = 5.dp, top = 10.dp, end = 5.dp, bottom = 4.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Image(
@@ -417,13 +430,71 @@ private fun TodayBattleCard(summary: TodayFitnessSummary, state: CharacterBattle
                     horizontalArrangement = Arrangement.spacedBy(2.dp),
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    StatMetricCard(R.drawable.fat_health, "脂肪怪\n血量：", "${state.fatMonsterHealthPercent}%", AppColors.PrimaryOrange, Modifier.weight(1f))
-                    StatMetricCard(R.drawable.muscle_growth, "肌肉伙伴\n成长：", "+${state.muscleGrowthValue}", AppColors.HealthyGreen, Modifier.weight(1f))
-                    StatMetricCard(R.drawable.today_sport, "今日运动：", "${summary.exerciseMinutes} 分钟", AppColors.EnergyYellow, Modifier.weight(1f))
-                    StatMetricCard(R.drawable.today_burn, "今日消耗：", "${summary.caloriesBurned} kcal", AppColors.PrimaryOrange, Modifier.weight(1f))
+                    StatMetricCard(
+                        iconResId = R.drawable.health,
+                        label = "脂肪怪\n血量：",
+                        value = "${state.fatMonsterHealthPercent}%",
+                        color = AppColors.PrimaryOrange,
+                        progress = state.fatMonsterHealthPercent / 100f,
+                        tuning = StatMetricCardTuning(
+                            valueOffsetX = 2.dp,
+                            valueOffsetY = (-3).dp
+                        ),
+                        modifier = Modifier.weight(1f)
+                    )
+                    StatMetricCard(
+                        iconResId = R.drawable.growth,
+                        label = "肌肉伙伴\n成长：",
+                        value = "+${state.muscleGrowthValue}",
+                        color = AppColors.HealthyGreen,
+                        progress = (state.muscleGrowthValue / 25f).coerceIn(0f, 1f),
+                        tuning = StatMetricCardTuning(
+                            valueOffsetX = 2.dp,
+                            valueOffsetY = (-3).dp
+                        ),
+                        modifier = Modifier.weight(1f)
+                    )
+                    StatMetricCard(
+                        iconResId = R.drawable.sport,
+                        label = "今日运动：",
+                        value = "${summary.exerciseMinutes} min",
+                        color = AppColors.EnergyYellow,
+                        progress = state.progressPercent,
+                        tuning = StatMetricCardTuning
+                        (
+                            progressOffsetX = 3.dp,
+                            progressOffsetY = 3.dp,
+                            valueOffsetX = 3.dp,
+                            valueOffsetY = 3.dp,
+                            iconOffsetX = 3.dp,
+                            iconOffsetY = 3.dp,
+                            labelOffsetX = 3.dp,
+                            labelOffsetY= 3.dp
+                        ),
+                        modifier = Modifier.weight(1f)
+                    )
+                    StatMetricCard(
+                        iconResId = R.drawable.burn,
+                        label = "今日消耗：",
+                        value = "${summary.caloriesBurned} kcal",
+                        color = AppColors.PrimaryOrange,
+                        progress = (summary.caloriesBurned / 500f).coerceIn(0f, 1f),
+                        tuning = StatMetricCardTuning
+                        (
+                            progressOffsetX = 3.dp,
+                            progressOffsetY = 3.dp,
+                            valueOffsetX = 3.dp,
+                            valueOffsetY = 3.dp,
+                            iconOffsetX = 3.dp,
+                            iconOffsetY = 3.dp,
+                            labelOffsetX = 3.dp,
+                            labelOffsetY= 3.dp
+                        ),
+                        modifier = Modifier.weight(1f)
+                    )
                 }
                 Spacer(Modifier.height(10.dp))
-                BattleReportButton()
+                BattleReportButton(text = state.battleTitle)
             }
         }
     }
@@ -451,11 +522,40 @@ private fun DebugStateSwitcher(selectedMinutes: Int, onSelected: (Int) -> Unit) 
 
 @Composable
 private fun DailyTaskCard(summary: TodayFitnessSummary) {
+    val tasks = buildDailyTasks(summary)
+        .sortedWith(compareBy<DailyTaskUiItem> { it.done }.thenBy { it.order })
+    val shouldScroll = tasks.size > 3
+
     BingoCard {
         SectionTitle("今日任务")
-        TaskRow("♟", "完成 30 分钟运动", "奖励：脂肪怪 -8%", summary.exerciseMinutes >= 30, AppColors.LightGreen)
-        TaskRow("◒", "记录一次饮食", "奖励：肌肉伙伴 +5", summary.hasFoodLog, AppColors.SoftPurple)
-        TaskRow("滴", "喝水 8 杯", "奖励：恢复 +3", summary.completedTaskCount >= 4, AppColors.SoftBlue)
+        if (shouldScroll) {
+            val scrollState = rememberScrollState()
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(196.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxHeight()
+                        .verticalScroll(scrollState),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    tasks.forEach { task ->
+                        TaskRow(task.iconResId, task.label, task.reward, task.done, task.color)
+                    }
+                }
+                TaskScrollIndicator(scrollState, modifier = Modifier.fillMaxHeight())
+            }
+        } else {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                tasks.forEach { task ->
+                    TaskRow(task.iconResId, task.label, task.reward, task.done, task.color)
+                }
+            }
+        }
         Text(
             "已完成 ${summary.completedTaskCount}/${summary.totalTaskCount}，连续 ${summary.streakDays} 天保持节奏。",
             color = AppColors.TextSecondary,
@@ -464,12 +564,89 @@ private fun DailyTaskCard(summary: TodayFitnessSummary) {
     }
 }
 
+private data class DailyTaskUiItem(
+    val order: Int,
+    val iconResId: Int,
+    val label: String,
+    val reward: String,
+    val done: Boolean,
+    val color: Color
+)
+
+private fun buildDailyTasks(summary: TodayFitnessSummary): List<DailyTaskUiItem> = listOf(
+    DailyTaskUiItem(
+        order = 0,
+        iconResId = R.drawable.today_task_exercise,
+        label = "完成30分钟运动",
+        reward = "奖励：脂肪怪 -8%",
+        done = summary.exerciseMinutes >= summary.targetExerciseMinutes,
+        color = AppColors.LightGreen
+    ),
+    DailyTaskUiItem(
+        order = 1,
+        iconResId = R.drawable.today_task_food,
+        label = "记录一次饮食",
+        reward = "奖励：肌肉伙伴 +5",
+        done = summary.hasFoodLog,
+        color = AppColors.SoftPurple
+    ),
+    DailyTaskUiItem(
+        order = 2,
+        iconResId = R.drawable.today_task_water,
+        label = "喝水 8 杯",
+        reward = "奖励：恢复 +3",
+        done = summary.completedTaskCount >= 3,
+        color = AppColors.SoftBlue
+    ),
+    DailyTaskUiItem(
+        order = 3,
+        iconResId = R.drawable.data_overview_weight,
+        label = "记录今日体重",
+        reward = "奖励：趋势 +1",
+        done = summary.hasWeightLog,
+        color = AppColors.LightGreen
+    ),
+    DailyTaskUiItem(
+        order = 4,
+        iconResId = R.drawable.data_overview_burn,
+        label = "完成消耗目标",
+        reward = "奖励：脂肪怪 -5%",
+        done = summary.caloriesBurned >= summary.targetCalories,
+        color = AppColors.LightOrange
+    )
+)
+
+@Composable
+private fun TaskScrollIndicator(scrollState: ScrollState, modifier: Modifier = Modifier) {
+    Canvas(modifier = modifier.width(4.dp)) {
+        val radius = CornerRadius(size.width / 2f, size.width / 2f)
+        drawRoundRect(
+            color = AppColors.BorderWarm.copy(alpha = 0.42f),
+            size = Size(size.width, size.height),
+            cornerRadius = radius
+        )
+
+        val thumbHeight = size.height * 0.34f
+        val progress = if (scrollState.maxValue == 0) {
+            0f
+        } else {
+            scrollState.value.toFloat() / scrollState.maxValue.toFloat()
+        }
+        drawRoundRect(
+            color = AppColors.PrimaryOrange.copy(alpha = 0.8f),
+            topLeft = Offset(0f, (size.height - thumbHeight) * progress),
+            size = Size(size.width, thumbHeight),
+            cornerRadius = radius
+        )
+    }
+}
+
 @Composable
 private fun HomeSummaryCards(summary: TodayFitnessSummary) {
     Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
-        HomeSummaryCard("▣", "体重", "72.0 kg", AppColors.LightGreen, Modifier.weight(1f))
-        HomeSummaryCard("◢", "运动", "${summary.exerciseMinutes} min", AppColors.SoftBlue, Modifier.weight(1f))
-        HomeSummaryCard("♨", "消耗", "${summary.caloriesBurned} kcal", AppColors.LightOrange, Modifier.weight(1f))
+        HomeSummaryCard(R.drawable.data_overview_weight, "体重(kg)", "72.0", AppColors.LightGreen, Modifier.weight(1f))
+        HomeSummaryCard(R.drawable.data_overview_exercise, "运动(min)", "${summary.exerciseMinutes}", AppColors.SoftBlue, Modifier.weight(1f))
+        HomeSummaryCard(R.drawable.data_overview_burn, "消耗(kcal)", "${summary.caloriesBurned}", AppColors.LightOrange, Modifier.weight(1f))
     }
 }
 
@@ -477,7 +654,12 @@ private fun HomeSummaryCards(summary: TodayFitnessSummary) {
 private fun ReminderCard(title: String = "今日提醒：", text: String) {
     BingoCard(contentPadding = 12.dp, radius = 22.dp) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            FatMonsterView(FatMonsterState.Teasing, modifier = Modifier.size(54.dp))
+            Image(
+                painter = painterResource(R.drawable.tip_fat_icon),
+                contentDescription = title,
+                modifier = Modifier.size(54.dp),
+                contentScale = ContentScale.Fit
+            )
             Column {
                 Text(title, color = AppColors.TextNavy, fontWeight = FontWeight.Black)
                 Text(text, color = AppColors.TextNavy, fontSize = 13.sp, lineHeight = 19.sp)
@@ -706,13 +888,22 @@ private fun SectionTitle(title: String, action: String? = null) {
 }
 
 @Composable
+private fun HomeStartButton(modifier: Modifier = Modifier) {
+    Image(
+        painter = painterResource(R.drawable.home_start_btn),
+        contentDescription = "开始今日反击",
+        modifier = modifier.height(75.dp),
+        contentScale = ContentScale.FillBounds
+    )
+}
+
+@Composable
 private fun PrimaryGradientButton(text: String, modifier: Modifier = Modifier) {
     Box(
         modifier = modifier
             .height(58.dp)
             .clip(RoundedCornerShape(28.dp))
-            .background(Brush.horizontalGradient(listOf(AppColors.OrangeDeep, AppColors.PrimaryOrange)))
-            .padding(horizontal = 18.dp),
+            .background(Brush.horizontalGradient(listOf(AppColors.OrangeDeep, AppColors.PrimaryOrange))),
         contentAlignment = Alignment.Center
     ) {
         Text(text, color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Black)
@@ -735,7 +926,7 @@ private fun OutlineOrangeButton(text: String) {
 }
 
 @Composable
-private fun BattleReportButton() {
+private fun BattleReportButton(text: String) {
     Box(
         modifier = Modifier
             .fillMaxWidth(0.76f)
@@ -746,52 +937,101 @@ private fun BattleReportButton() {
             .padding(horizontal = 18.dp),
         contentAlignment = Alignment.Center
     ) {
-        Text("查看今日战报", color = AppColors.PrimaryOrange, fontSize = 16.sp, fontWeight = FontWeight.Black)
+        Text(text, color = AppColors.PrimaryOrange, fontSize = 16.sp, fontWeight = FontWeight.Black)
         Text("›", color = AppColors.BorderWarm, fontSize = 28.sp, modifier = Modifier.align(Alignment.CenterEnd))
     }
 }
 
+private data class StatMetricCardTuning(
+    val cardHeight: Dp = 54.dp,
+    val cardPaddingHorizontal: Dp = 5.dp,
+    val cardPaddingVertical: Dp = 5.dp,
+    val iconSize: Dp = 20.dp,
+    val iconOffsetX: Dp = 0.dp,
+    val iconOffsetY: Dp = 0.dp,
+    val labelOffsetX: Dp = 0.dp,
+    val labelOffsetY: Dp = 0.dp,
+    val labelFontSize: TextUnit = 10.sp,
+    val labelLineHeight: TextUnit = 12.sp,
+    val titleGap: Dp = 2.dp,
+    val progressValueGap: Dp = 4.dp,
+    val progressHeight: Dp = 4.dp,
+    val progressOffsetX: Dp = 0.dp,
+    val progressOffsetY: Dp = 0.dp,
+    val valueOffsetX: Dp = 0.dp,
+    val valueOffsetY: Dp = 0.dp,
+    val valueFontSize: TextUnit = 10.sp
+)
+
 @Composable
-private fun StatMetricCard(iconResId: Int, label: String, value: String, color: Color, modifier: Modifier) {
+private fun StatMetricCard(
+    iconResId: Int,
+    label: String,
+    value: String,
+    color: Color,
+    progress: Float,
+    tuning: StatMetricCardTuning,
+    modifier: Modifier
+) {
     Column(
         modifier = modifier
-            .height(54.dp)
+            .height(tuning.cardHeight)
             .clip(RoundedCornerShape(14.dp))
             .background(Color.White.copy(alpha = 0.94f))
             .border(1.dp, AppColors.BorderWarm.copy(alpha = 0.58f), RoundedCornerShape(14.dp))
-            .padding(horizontal = 5.dp, vertical = 5.dp),
+            .padding(horizontal = tuning.cardPaddingHorizontal, vertical = tuning.cardPaddingVertical),
         verticalArrangement = Arrangement.SpaceBetween
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(2.dp)) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(tuning.titleGap))
+        {
             Image(
                 painter = painterResource(iconResId),
                 contentDescription = label,
-                modifier = Modifier.size(20.dp),
+                modifier = Modifier
+                    .size(tuning.iconSize)
+                    .offset(x = tuning.iconOffsetX, y = tuning.iconOffsetY),
                 contentScale = ContentScale.Fit
             )
             Text(
                 label,
+                modifier = Modifier.offset(x = tuning.labelOffsetX, y = tuning.labelOffsetY),
                 color = AppColors.TextNavy,
-                fontSize = 10.sp,
-                lineHeight = 10.sp,
+                fontSize = tuning.labelFontSize,
+                lineHeight = tuning.labelLineHeight,
                 fontWeight = FontWeight.SemiBold,
                 maxLines = 2
             )
         }
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(tuning.progressValueGap))
+        {
             LinearProgressIndicator(
-                progress = { 0.72f },
-                modifier = Modifier.weight(1f).height(4.dp).clip(RoundedCornerShape(99.dp)),
+                progress = { progress.coerceIn(0f, 1f) },
+                modifier = Modifier
+                    .weight(1f)
+                    .height(tuning.progressHeight)
+                    .offset(x = tuning.progressOffsetX, y = tuning.progressOffsetY)
+                    .clip(RoundedCornerShape(99.dp)),
                 color = color,
                 trackColor = AppColors.BorderWarm.copy(alpha = 0.54f)
             )
-            Text(value, color = AppColors.TextNavy, fontSize = 14.sp, fontWeight = FontWeight.Black, maxLines = 1)
+            Text(
+                value,
+                color = AppColors.TextNavy,
+                fontSize = tuning.valueFontSize,
+                fontWeight = FontWeight.Black,
+                modifier = Modifier.offset(x = tuning.valueOffsetX, y = tuning.valueOffsetY),
+                maxLines = 1
+            )
         }
     }
 }
 
 @Composable
-private fun TaskRow(icon: String, label: String, reward: String, done: Boolean, color: Color) {
+private fun TaskRow(iconResId: Int, label: String, reward: String, done: Boolean, color: Color) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -801,8 +1041,27 @@ private fun TaskRow(icon: String, label: String, reward: String, done: Boolean, 
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(10.dp)
     ) {
-        CircleIcon(icon, color, if (color == AppColors.LightOrange) AppColors.PrimaryOrange else AppColors.HealthyGreen, 44.dp)
-        Text(label, color = AppColors.TextNavy, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
+        Box(
+            modifier = Modifier
+                .size(40.dp)
+                .clip(CircleShape)
+                .background(color),
+            contentAlignment = Alignment.Center
+        ) {
+            Image(
+                painter = painterResource(iconResId),
+                contentDescription = label,
+                modifier = Modifier.size(30.dp),
+                contentScale = ContentScale.Fit
+            )
+        }
+        Text(label,
+            color = AppColors.TextNavy,
+            fontWeight = FontWeight.Bold,
+            fontSize = 14.sp,
+            lineHeight = 17.sp,
+            modifier = Modifier.weight(1f)
+        )
         RewardChip(reward, color)
         Box(
             modifier = Modifier
@@ -818,20 +1077,40 @@ private fun TaskRow(icon: String, label: String, reward: String, done: Boolean, 
 }
 
 @Composable
-private fun HomeSummaryCard(icon: String, label: String, value: String, color: Color, modifier: Modifier) {
+private fun HomeSummaryCard(iconResId: Int, label: String, value: String, color: Color, modifier: Modifier) {
     Row(
         modifier = modifier
             .clip(RoundedCornerShape(18.dp))
             .background(AppColors.CardWhite)
             .border(1.dp, AppColors.BorderWarm.copy(alpha = 0.72f), RoundedCornerShape(18.dp))
-            .padding(10.dp),
+            .padding(horizontal = 8.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
+        horizontalArrangement = Arrangement.spacedBy(6.dp)
     ) {
-        CircleIcon(icon, color, AppColors.PrimaryOrange, 42.dp)
+        Box(
+            modifier = Modifier
+                .size(34.dp)
+                .clip(CircleShape)
+                .background(color),
+            contentAlignment = Alignment.Center
+        ) {
+            Image(
+                painter = painterResource(iconResId),
+                contentDescription = label,
+                modifier = Modifier.size(24.dp),
+                contentScale = ContentScale.Fit
+            )
+        }
         Column {
-            Text(label, color = AppColors.TextSecondary, fontSize = 12.sp)
-            Text(value, color = AppColors.TextNavy, fontWeight = FontWeight.Black)
+            Text(
+                label,
+                color = AppColors.TextSecondary,
+                fontSize = 10.sp,
+                lineHeight = 12.sp,
+                maxLines = 1,
+                softWrap = false
+            )
+            Text(value, color = AppColors.TextNavy, fontSize = 13.sp, fontWeight = FontWeight.Black)
         }
     }
 }
@@ -934,6 +1213,38 @@ private fun SpeechBubble(
         lineHeight = 15.sp,
         textAlign = TextAlign.Center
     )
+}
+
+@Composable
+private fun BattleImageBubble(
+    text: String,
+    bubbleResId: Int,
+    modifier: Modifier = Modifier,
+    horizontalPadding: Dp = 10.dp,
+    verticalPadding: Dp = 8.dp,
+    textOffsetX: Dp = 0.dp,
+    textOffsetY: Dp = 0.dp,
+    textAlign: TextAlign = TextAlign.Center
+) {
+    Box(modifier = modifier, contentAlignment = Alignment.Center) {
+        Image(
+            painter = painterResource(bubbleResId),
+            contentDescription = null,
+            modifier = Modifier.matchParentSize(),
+            contentScale = ContentScale.FillBounds
+        )
+        Text(
+            text = text,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = horizontalPadding, vertical = verticalPadding)
+                .offset(x = textOffsetX, y = textOffsetY),
+            color = AppColors.TextNavy,
+            fontSize = 11.sp,
+            lineHeight = 15.sp,
+            textAlign = textAlign
+        )
+    }
 }
 
 @Composable

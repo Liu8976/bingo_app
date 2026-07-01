@@ -21,7 +21,7 @@ object CharacterBattleStateCalculator {
                 fatMonsterHealthPercent = 100,
                 muscleGrowthValue = 0,
                 fatMonsterBubbleText = "今天不动？那我可就住下了。",
-                muscleBuddyBubbleText = "别急，先动 5 分钟也算开局。",
+                muscleBuddyBubbleText = "别急，先动5分钟也算开局。",
                 battleTitle = "脂肪怪正在嚣张",
                 battleSummary = "今天还没开始运动，先完成一个小目标。",
                 primaryButtonText = "开始今日反击",

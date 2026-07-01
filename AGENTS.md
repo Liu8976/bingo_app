@@ -69,6 +69,12 @@ Do not perform broad refactors, dependency upgrades, package migrations, project
 
 Before changing build configuration, package versions, Android settings, CI files, or signing-related files, explain the risk and ask for confirmation.
 
+### Verification and running
+
+After making changes, do not automatically build, test, run the app, start the emulator, or install the APK.
+
+Only build, test, run, start the emulator, or install the APK when the user explicitly asks for that verification step.
+
 ### Response requirements
 
 After making changes, summarize:
