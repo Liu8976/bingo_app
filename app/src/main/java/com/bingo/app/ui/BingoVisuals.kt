@@ -339,11 +339,11 @@ private fun HomeGoalText(text: String) {
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun TodayBattleCard(summary: TodayFitnessSummary, state: CharacterBattleState) {
-    BingoCard(contentPadding = 10.dp, radius = 24.dp) {
+    BingoCard(contentPadding = 6.dp, radius = 24.dp) {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .heightIn(min = 430.dp)
+                .height(260.dp)
                 .clip(RoundedCornerShape(22.dp))
                 .background(
                     Brush.verticalGradient(
@@ -352,50 +352,77 @@ private fun TodayBattleCard(summary: TodayFitnessSummary, state: CharacterBattle
                 )
         ) {
             BattleStageBackground()
+            FatMonsterView(
+                state.fatMonsterState,
+                modifier = Modifier
+                    .align(Alignment.TopStart)
+                    .padding(top = 35.dp, start = 55.dp)
+                    .width(128.dp)
+                    .height(128.dp)
+            )
+            MuscleBuddyView(
+                state.muscleBuddyState,
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(top = 40.dp, end = 60.dp)
+                    .width(115.dp)
+                    .height(115.dp)
+            )
+            Image(
+                painter = painterResource(R.drawable.vs),
+                contentDescription = "VS",
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .padding(top = 50.dp)
+                    .width(38.5.dp)
+                    .height(81.dp),
+                contentScale = ContentScale.FillBounds
+            )
+            SpeechBubble(
+                "才40分钟？我还能嘴硬。",
+                Color.White,
+                AppColors.BorderWarm,
+                Modifier
+                    .align(Alignment.TopStart)
+                    .padding(start = 5.dp, top = 30.dp)
+                    .width(90.dp),
+                horizontalPadding = 6.dp,
+                verticalPadding = 6.dp
+            )
+            SpeechBubble(
+                "别听它的，它已经开始喘了。",
+                Color.White,
+                AppColors.GrowthGreen.copy(alpha = 0.46f),
+                Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(end = 5.dp, top = 30.dp)
+                    .width(90.dp),
+                horizontalPadding = 6.dp,
+                verticalPadding = 6.dp
+            )
             Column(
-                modifier = Modifier.padding(start = 10.dp, top = 18.dp, end = 10.dp, bottom = 14.dp),
+                modifier = Modifier.padding(start = 10.dp, top = 10.dp, end = 10.dp, bottom = 4.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Image(
                     painter = painterResource(R.drawable.today_battle_title),
                     contentDescription = "今日战况",
                     modifier = Modifier
-                        .width(132.dp)
-                        .height(25.dp),
+                        .width(127.dp)
+                        .height(22.8.dp),
                     contentScale = ContentScale.Fit
                 )
-                Spacer(Modifier.height(16.dp))
+                Spacer(Modifier.height(115.dp))
                 Row(
-                    verticalAlignment = Alignment.Bottom,
+                    horizontalArrangement = Arrangement.spacedBy(2.dp),
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.weight(1f)) {
-                        SpeechBubble("才 40 分钟？\n我还能嘴硬。", Color.White, AppColors.BorderWarm, Modifier.height(58.dp))
-                        FatMonsterView(state.fatMonsterState, modifier = Modifier.size(138.dp))
-                    }
-                    Text(
-                        "VS",
-                        color = AppColors.PrimaryOrange,
-                        fontSize = 32.sp,
-                        fontWeight = FontWeight.Black,
-                        modifier = Modifier.padding(start = 2.dp, end = 2.dp, bottom = 48.dp)
-                    )
-                    Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.weight(1f)) {
-                        SpeechBubble("别听它的，\n它已经开始喘了。", Color.White, AppColors.GrowthGreen.copy(alpha = 0.46f), Modifier.height(58.dp))
-                        MuscleBuddyView(state.muscleBuddyState, modifier = Modifier.size(138.dp))
-                    }
-                }
-                Spacer(Modifier.height(4.dp))
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    StatMetricCard(R.drawable.fat_health, "脂肪怪血量：", "${state.fatMonsterHealthPercent}%", AppColors.PrimaryOrange, Modifier.weight(1f))
-                    StatMetricCard(R.drawable.muscle_growth, "肌肉伙伴成长：", "+${state.muscleGrowthValue}", AppColors.HealthyGreen, Modifier.weight(1f))
+                    StatMetricCard(R.drawable.fat_health, "脂肪怪\n血量：", "${state.fatMonsterHealthPercent}%", AppColors.PrimaryOrange, Modifier.weight(1f))
+                    StatMetricCard(R.drawable.muscle_growth, "肌肉伙伴\n成长：", "+${state.muscleGrowthValue}", AppColors.HealthyGreen, Modifier.weight(1f))
                     StatMetricCard(R.drawable.today_sport, "今日运动：", "${summary.exerciseMinutes} 分钟", AppColors.EnergyYellow, Modifier.weight(1f))
                     StatMetricCard(R.drawable.today_burn, "今日消耗：", "${summary.caloriesBurned} kcal", AppColors.PrimaryOrange, Modifier.weight(1f))
                 }
-                Spacer(Modifier.height(14.dp))
+                Spacer(Modifier.height(10.dp))
                 BattleReportButton()
             }
         }
@@ -712,15 +739,15 @@ private fun BattleReportButton() {
     Box(
         modifier = Modifier
             .fillMaxWidth(0.76f)
-            .height(48.dp)
+            .height(34.dp)
             .clip(RoundedCornerShape(18.dp))
             .border(1.dp, AppColors.PrimaryOrange.copy(alpha = 0.78f), RoundedCornerShape(18.dp))
             .background(Color.White.copy(alpha = 0.38f))
             .padding(horizontal = 18.dp),
         contentAlignment = Alignment.Center
     ) {
-        Text("查看今日战报", color = AppColors.PrimaryOrange, fontSize = 18.sp, fontWeight = FontWeight.Black)
-        Text("›", color = AppColors.BorderWarm, fontSize = 32.sp, modifier = Modifier.align(Alignment.CenterEnd))
+        Text("查看今日战报", color = AppColors.PrimaryOrange, fontSize = 16.sp, fontWeight = FontWeight.Black)
+        Text("›", color = AppColors.BorderWarm, fontSize = 28.sp, modifier = Modifier.align(Alignment.CenterEnd))
     }
 }
 
@@ -728,29 +755,38 @@ private fun BattleReportButton() {
 private fun StatMetricCard(iconResId: Int, label: String, value: String, color: Color, modifier: Modifier) {
     Column(
         modifier = modifier
-            .height(90.dp)
+            .height(54.dp)
             .clip(RoundedCornerShape(14.dp))
             .background(Color.White.copy(alpha = 0.94f))
             .border(1.dp, AppColors.BorderWarm.copy(alpha = 0.58f), RoundedCornerShape(14.dp))
-            .padding(horizontal = 7.dp, vertical = 8.dp),
+            .padding(horizontal = 5.dp, vertical = 5.dp),
         verticalArrangement = Arrangement.SpaceBetween
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(3.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(2.dp)) {
             Image(
                 painter = painterResource(iconResId),
                 contentDescription = label,
-                modifier = Modifier.size(18.dp),
+                modifier = Modifier.size(20.dp),
                 contentScale = ContentScale.Fit
             )
-            Text(label, color = AppColors.TextNavy, fontSize = 9.sp, fontWeight = FontWeight.SemiBold, maxLines = 1)
+            Text(
+                label,
+                color = AppColors.TextNavy,
+                fontSize = 10.sp,
+                lineHeight = 10.sp,
+                fontWeight = FontWeight.SemiBold,
+                maxLines = 2
+            )
         }
-        Text(value, color = AppColors.TextNavy, fontSize = 18.sp, fontWeight = FontWeight.Black, maxLines = 1)
-        LinearProgressIndicator(
-            progress = { 0.72f },
-            modifier = Modifier.fillMaxWidth().height(6.dp).clip(RoundedCornerShape(99.dp)),
-            color = color,
-            trackColor = AppColors.BorderWarm.copy(alpha = 0.54f)
-        )
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+            LinearProgressIndicator(
+                progress = { 0.72f },
+                modifier = Modifier.weight(1f).height(4.dp).clip(RoundedCornerShape(99.dp)),
+                color = color,
+                trackColor = AppColors.BorderWarm.copy(alpha = 0.54f)
+            )
+            Text(value, color = AppColors.TextNavy, fontSize = 14.sp, fontWeight = FontWeight.Black, maxLines = 1)
+        }
     }
 }
 
@@ -878,14 +914,21 @@ private fun PillButton(text: String, selected: Boolean, onClick: () -> Unit) {
 }
 
 @Composable
-private fun SpeechBubble(text: String, color: Color, border: Color, modifier: Modifier = Modifier) {
+private fun SpeechBubble(
+    text: String,
+    color: Color,
+    border: Color,
+    modifier: Modifier = Modifier,
+    horizontalPadding: Dp = 10.dp,
+    verticalPadding: Dp = 8.dp
+) {
     Text(
         text = text,
         modifier = modifier
             .clip(RoundedCornerShape(14.dp))
             .background(color)
             .border(1.dp, border, RoundedCornerShape(14.dp))
-            .padding(horizontal = 10.dp, vertical = 8.dp),
+            .padding(horizontal = horizontalPadding, vertical = verticalPadding),
         color = AppColors.TextNavy,
         fontSize = 11.sp,
         lineHeight = 15.sp,
@@ -950,6 +993,7 @@ private fun CharacterImage(resourceId: Int, contentDescription: String, modifier
 }
 
 private fun FatMonsterState.drawableResId(): Int = when (this) {
+    FatMonsterState.Normal -> R.drawable.fat_monster_normal
     FatMonsterState.Lazy -> R.drawable.fat_monster_lazy
     FatMonsterState.Teasing -> R.drawable.fat_monster_teasing
     FatMonsterState.Nervous -> R.drawable.fat_monster_nervous
@@ -958,6 +1002,7 @@ private fun FatMonsterState.drawableResId(): Int = when (this) {
 }
 
 private fun MuscleBuddyState.drawableResId(): Int = when (this) {
+    MuscleBuddyState.Normal -> R.drawable.muscle_buddy_normal
     MuscleBuddyState.Sleepy -> R.drawable.muscle_buddy_sleepy
     MuscleBuddyState.Ready -> R.drawable.muscle_buddy_ready
     MuscleBuddyState.Active -> R.drawable.muscle_buddy_active
@@ -970,7 +1015,7 @@ private fun BattleStageBackground() {
     Canvas(modifier = Modifier.fillMaxSize()) {
         val w = size.width
         val h = size.height
-        drawOval(AppColors.LightOrange.copy(alpha = 0.7f), topLeft = Offset(-w * 0.15f, h * 0.2f), size = Size(w * 1.3f, h * 0.55f))
+        drawOval(AppColors.LightOrange.copy(alpha = 0.7f), topLeft = Offset(-w * 0.15f, h * 0.13f), size = Size(w * 1.3f, h * 0.58f))
         repeat(18) { i ->
             val x = (i * 53 % w.toInt()).toFloat()
             val y = h * (0.12f + (i % 7) * 0.09f)

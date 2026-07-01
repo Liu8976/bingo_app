@@ -13,6 +13,7 @@ data class TodayFitnessSummary(
 )
 
 enum class FatMonsterState {
+    Normal,
     Lazy,
     Teasing,
     Nervous,
@@ -21,6 +22,7 @@ enum class FatMonsterState {
 }
 
 enum class MuscleBuddyState {
+    Normal,
     Sleepy,
     Ready,
     Active,
@@ -44,11 +46,13 @@ data class CharacterBattleState(
 )
 
 enum class CharacterAssetKey(val resourceName: String) {
+    FatMonsterNormal("fat_monster_normal"),
     FatMonsterLazy("fat_monster_lazy"),
     FatMonsterTeasing("fat_monster_teasing"),
     FatMonsterNervous("fat_monster_nervous"),
     FatMonsterWeakened("fat_monster_weakened"),
     FatMonsterDefeated("fat_monster_defeated"),
+    MuscleBuddyNormal("muscle_buddy_normal"),
     MuscleBuddySleepy("muscle_buddy_sleepy"),
     MuscleBuddyReady("muscle_buddy_ready"),
     MuscleBuddyActive("muscle_buddy_active"),
