@@ -1,5 +1,6 @@
 package com.bingo.app.ui
 
+import androidx.annotation.StringRes
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.ScrollState
@@ -15,6 +16,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -38,6 +40,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
@@ -52,15 +55,15 @@ import com.bingo.app.ui.theme.AppColors
 import kotlin.math.roundToInt
 
 enum class BingoTab(
-    val title: String,
+    @StringRes val titleRes: Int,
     val selectedIconRes: Int,
     val unselectedIconRes: Int
 ) {
-    Today("今日", R.drawable.nav_today_selected, R.drawable.nav_today_unselected),
-    Training("训练", R.drawable.nav_training_selected, R.drawable.nav_training_unselected),
-    Records("记录", R.drawable.nav_records_selected, R.drawable.nav_records_unselected),
-    Community("广场", R.drawable.nav_community_selected, R.drawable.nav_community_unselected),
-    Profile("我的", R.drawable.nav_profile_selected, R.drawable.nav_profile_unselected)
+    Today(R.string.nav_today, R.drawable.nav_today_selected, R.drawable.nav_today_unselected),
+    Training(R.string.nav_training, R.drawable.nav_training_selected, R.drawable.nav_training_unselected),
+    Records(R.string.nav_records, R.drawable.nav_records_selected, R.drawable.nav_records_unselected),
+    Community(R.string.nav_community, R.drawable.nav_community_selected, R.drawable.nav_community_unselected),
+    Profile(R.string.nav_profile, R.drawable.nav_profile_selected, R.drawable.nav_profile_unselected)
 }
 
 @Composable
@@ -75,6 +78,7 @@ fun BingoBottomBar(selectedTab: BingoTab, onTabSelected: (BingoTab) -> Unit) {
     ) {
         BingoTab.entries.forEach { tab ->
             val selected = selectedTab == tab
+            val title = stringResource(tab.titleRes)
             NavigationBarItem(
                 selected = selected,
                 onClick = { onTabSelected(tab) },
@@ -83,14 +87,14 @@ fun BingoBottomBar(selectedTab: BingoTab, onTabSelected: (BingoTab) -> Unit) {
                         painter = painterResource(
                             if (selected) tab.selectedIconRes else tab.unselectedIconRes
                         ),
-                        contentDescription = tab.title,
+                        contentDescription = title,
                         modifier = Modifier.size(22.dp),
                         contentScale = ContentScale.Fit
                     )
                 },
                 label = {
                     Text(
-                        text = tab.title,
+                        text = title,
                         color = if (selected) AppColors.PrimaryOrange else AppColors.TextSecondary,
                         fontSize = 11.sp,
                         fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium
@@ -139,30 +143,33 @@ internal fun BingoCard(
 }
 
 @Composable
-internal fun SectionTitle(title: String, action: String? = null) {
+internal fun SectionTitle(title: String) {
     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Box(modifier = Modifier.size(8.dp).clip(CircleShape).background(AppColors.PrimaryOrange))
             Text(title, color = AppColors.TextNavy, fontSize = 18.sp, fontWeight = FontWeight.Black)
         }
-        if (action != null) Text(action, color = AppColors.TextSecondary, fontSize = 12.sp)
     }
 }
 
 @Composable
 internal fun HomeGoalText(text: String) {
-    val targetText = "今日目标：运动30分钟 · 饮水2L"
-    val displayText = if (text.contains("今日目标")) targetText else text
+    // 高亮文案里出现的关键数值（如 "30"、"2L"），不再依赖写死的目标文案，
+    // 调用方传入什么就渲染什么，展示层与内容解耦。
+    val accents = Regex("""\d+(?:\.\d+)?[A-Za-z]*""").findAll(text).map { it.value }.toList()
     val annotatedText = buildAnnotatedString {
-        append(displayText)
-        listOf("30", "2L").forEach { accent ->
-            val start = displayText.indexOf(accent)
-            if (start >= 0) {
+        append(text)
+        accents.forEach { accent ->
+            var searchStart = 0
+            while (true) {
+                val start = text.indexOf(accent, searchStart)
+                if (start < 0) break
                 addStyle(
                     SpanStyle(color = AppColors.OrangeDeep, fontWeight = FontWeight.Black),
                     start = start,
                     end = start + accent.length
                 )
+                searchStart = start + accent.length
             }
         }
     }
@@ -179,6 +186,7 @@ internal fun HomeGoalText(text: String) {
 internal fun PillButton(text: String, selected: Boolean, onClick: () -> Unit) {
     Box(
         modifier = Modifier
+            .heightIn(min = 44.dp)
             .clip(RoundedCornerShape(99.dp))
             .clickable(onClick = onClick)
             .background(if (selected) AppColors.PrimaryOrange else AppColors.CardWhite)
@@ -223,16 +231,6 @@ internal fun CircleIcon(text: String, background: Color, textColor: Color = AppC
 }
 
 @Composable
-internal fun ImageCircleIcon(iconResId: Int, contentDescription: String, size: Dp = 44.dp) {
-    Image(
-        painter = painterResource(iconResId),
-        contentDescription = contentDescription,
-        modifier = Modifier.size(size),
-        contentScale = ContentScale.Fit
-    )
-}
-
-@Composable
 internal fun SpeechBubble(
     text: String,
     color: Color,
@@ -273,7 +271,7 @@ internal fun CharacterAvatar(state: MuscleBuddyState, size: Dp = 58.dp) {
 internal fun FatMonsterView(state: FatMonsterState, modifier: Modifier = Modifier.size(108.dp)) {
     CharacterImage(
         resourceId = state.drawableResId(),
-        contentDescription = "Fat monster ${state.name.lowercase()} state",
+        contentDescription = null,
         modifier = modifier
     )
 }
@@ -282,13 +280,13 @@ internal fun FatMonsterView(state: FatMonsterState, modifier: Modifier = Modifie
 internal fun MuscleBuddyView(state: MuscleBuddyState, modifier: Modifier = Modifier.size(108.dp)) {
     CharacterImage(
         resourceId = state.drawableResId(),
-        contentDescription = "Muscle buddy ${state.name.lowercase()} state",
+        contentDescription = null,
         modifier = modifier
     )
 }
 
 @Composable
-internal fun CharacterImage(resourceId: Int, contentDescription: String, modifier: Modifier) {
+internal fun CharacterImage(resourceId: Int, contentDescription: String?, modifier: Modifier) {
     Image(
         painter = painterResource(resourceId),
         contentDescription = contentDescription,
@@ -316,7 +314,7 @@ internal fun MuscleBuddyState.drawableResId(): Int = when (this) {
 }
 
 @Composable
-internal fun BingoLogo(color: Color = AppColors.PrimaryOrange) {
+internal fun BingoLogo() {
     Image(
         painter = painterResource(R.drawable.logo),
         contentDescription = "Bingo",
@@ -328,11 +326,16 @@ internal fun BingoLogo(color: Color = AppColors.PrimaryOrange) {
 }
 
 @Composable
-internal fun PrimaryGradientButton(text: String, modifier: Modifier = Modifier) {
+internal fun PrimaryGradientButton(
+    text: String,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit
+) {
     Box(
         modifier = modifier
             .height(58.dp)
             .clip(RoundedCornerShape(28.dp))
+            .clickable(onClick = onClick)
             .background(Brush.horizontalGradient(listOf(AppColors.OrangeDeep, AppColors.PrimaryOrange))),
         contentAlignment = Alignment.Center
     ) {
@@ -341,13 +344,13 @@ internal fun PrimaryGradientButton(text: String, modifier: Modifier = Modifier) 
 }
 
 @Composable
-internal fun OutlineOrangeButton(text: String, onClick: (() -> Unit)? = null) {
+internal fun OutlineOrangeButton(text: String, onClick: () -> Unit) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
             .height(44.dp)
             .clip(RoundedCornerShape(22.dp))
-            .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
+            .clickable(onClick = onClick)
             .border(1.5.dp, AppColors.PrimaryOrange, RoundedCornerShape(22.dp)),
         contentAlignment = Alignment.Center
     ) {

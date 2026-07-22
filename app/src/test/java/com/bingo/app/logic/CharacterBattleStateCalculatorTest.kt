@@ -4,6 +4,8 @@ import com.bingo.app.mock.MockBingoData
 import com.bingo.app.model.FatMonsterState
 import com.bingo.app.model.MuscleBuddyState
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class CharacterBattleStateCalculatorTest {
@@ -46,5 +48,19 @@ class CharacterBattleStateCalculatorTest {
 
         assertEquals(FatMonsterState.Defeated, state.fatMonsterState)
         assertEquals(MuscleBuddyState.Victory, state.muscleBuddyState)
+    }
+
+    @Test
+    fun boundaryMinutesMapToExpectedGoalState() {
+        assertFalse(CharacterBattleStateCalculator.calculate(MockBingoData.todaySummary(29)).isGoalCompleted)
+        assertTrue(CharacterBattleStateCalculator.calculate(MockBingoData.todaySummary(30)).isGoalCompleted)
+        assertEquals(
+            FatMonsterState.Weakened,
+            CharacterBattleStateCalculator.calculate(MockBingoData.todaySummary(44)).fatMonsterState
+        )
+        assertEquals(
+            FatMonsterState.Defeated,
+            CharacterBattleStateCalculator.calculate(MockBingoData.todaySummary(45)).fatMonsterState
+        )
     }
 }

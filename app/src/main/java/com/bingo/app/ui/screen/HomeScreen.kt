@@ -4,9 +4,9 @@ import android.content.pm.ApplicationInfo
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
@@ -15,7 +15,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -24,8 +23,14 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -34,26 +39,26 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.bingo.app.R
 import com.bingo.app.mock.MockBingoData
 import com.bingo.app.model.CharacterBattleState
+import com.bingo.app.model.BodyRecordsSummary
 import com.bingo.app.model.MuscleBuddyState
 import com.bingo.app.model.TodayFitnessSummary
 import com.bingo.app.ui.BattleImageBubble
 import com.bingo.app.ui.BingoCard
-import com.bingo.app.ui.BingoLogo
 import com.bingo.app.ui.CharacterAvatar
 import com.bingo.app.ui.FatMonsterView
-import com.bingo.app.ui.HomeGoalText
 import com.bingo.app.ui.MuscleBuddyView
 import com.bingo.app.ui.PillButton
+import com.bingo.app.ui.PageHeader
 import com.bingo.app.ui.PrimaryGradientButton
+import com.bingo.app.ui.ReminderCard
 import com.bingo.app.ui.RewardChip
 import com.bingo.app.ui.ScreenList
 import com.bingo.app.ui.SectionTitle
@@ -65,16 +70,21 @@ import com.bingo.app.ui.theme.AppColors
 fun HomeScreen(
     summary: TodayFitnessSummary,
     battleState: CharacterBattleState,
+    records: BodyRecordsSummary,
     debugMinutes: Int,
-    onDebugMinutesChanged: (Int) -> Unit
+    onDebugMinutesChanged: (Int) -> Unit,
+    onStartTraining: () -> Unit,
+    onOpenRecords: () -> Unit,
+    onAddWater: () -> Unit
 ) {
     val isDebuggable = (LocalContext.current.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0
+    var showBattleReport by rememberSaveable { mutableStateOf(false) }
 
     ScreenList {
         item {
             PageHeader(
-                title = "早上好，今天准备反击了吗？",
-                subtitle = "今日目标：运动 30 分钟 · 饮水 2L",
+                title = stringResource(R.string.home_title),
+                subtitle = stringResource(R.string.home_goal),
                 trailing = { CharacterAvatar(MuscleBuddyState.Powered) }
             )
         }
@@ -82,37 +92,50 @@ fun HomeScreen(
         if (isDebuggable) {
             item { DebugStateSwitcher(selectedMinutes = debugMinutes, onSelected = onDebugMinutesChanged) }
         }
-        item { DailyTaskCard(summary = summary) }
-        item { HomeSummaryCards(summary = summary) }
         item {
-            if (battleState.primaryButtonText == "开始今日反击") {
-                HomeStartButton(modifier = Modifier.fillMaxWidth())
+            DailyTaskCard(
+                summary = summary,
+                onStartTraining = onStartTraining,
+                onOpenRecords = onOpenRecords,
+                onAddWater = onAddWater
+            )
+        }
+        item { HomeSummaryCards(summary = summary, records = records, onOpenRecords = onOpenRecords, onAddWater = onAddWater) }
+        item {
+            if (!battleState.isGoalCompleted) {
+                if (battleState.primaryButtonText == "开始今日反击") {
+                    HomeStartButton(modifier = Modifier.fillMaxWidth(), onClick = onStartTraining)
+                } else {
+                    PrimaryGradientButton(
+                        text = battleState.primaryButtonText,
+                        modifier = Modifier.fillMaxWidth(),
+                        onClick = onStartTraining
+                    )
+                }
             } else {
-                PrimaryGradientButton(text = battleState.primaryButtonText, modifier = Modifier.fillMaxWidth())
+                PrimaryGradientButton(
+                    text = stringResource(R.string.home_view_report),
+                    modifier = Modifier.fillMaxWidth(),
+                    onClick = { showBattleReport = true }
+                )
             }
         }
         item { ReminderCard(text = battleState.reminderText) }
     }
-}
 
-@Composable
-internal fun PageHeader(
-    title: String,
-    subtitle: String,
-    brandColor: Color = AppColors.PrimaryOrange,
-    trailing: @Composable BoxScope.() -> Unit
-) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.Top
-    ) {
-        Column(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.weight(1f)) {
-            BingoLogo(brandColor)
-            Text(title, color = AppColors.TextNavy, fontSize = 21.sp, lineHeight = 27.sp, fontWeight = FontWeight.Black)
-            HomeGoalText(subtitle)
-        }
-        Box(modifier = Modifier.padding(start = 12.dp), contentAlignment = Alignment.TopEnd, content = trailing)
+    if (showBattleReport) {
+        AlertDialog(
+            onDismissRequest = { showBattleReport = false },
+            title = { Text(battleState.battleTitle, fontWeight = FontWeight.Black) },
+            text = {
+                Text(
+                    "今日运动 ${summary.exerciseMinutes} 分钟，消耗 ${summary.caloriesBurned} kcal，完成 ${summary.completedTaskCount}/${summary.totalTaskCount} 项任务。"
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = { showBattleReport = false }) { Text(stringResource(R.string.home_report_confirm)) }
+            }
+        )
     }
 }
 
@@ -205,10 +228,6 @@ private fun TodayBattleCard(summary: TodayFitnessSummary, state: CharacterBattle
                         value = "${state.fatMonsterHealthPercent}%",
                         color = AppColors.PrimaryOrange,
                         progress = state.fatMonsterHealthPercent / 100f,
-                        tuning = StatMetricCardTuning(
-                            valueOffsetX = 2.dp,
-                            valueOffsetY = (-3).dp
-                        ),
                         modifier = Modifier.weight(1f)
                     )
                     StatMetricCard(
@@ -217,10 +236,6 @@ private fun TodayBattleCard(summary: TodayFitnessSummary, state: CharacterBattle
                         value = "+${state.muscleGrowthValue}",
                         color = AppColors.GrowthGreen,
                         progress = (state.muscleGrowthValue / 25f).coerceIn(0f, 1f),
-                        tuning = StatMetricCardTuning(
-                            valueOffsetX = 2.dp,
-                            valueOffsetY = (-3).dp
-                        ),
                         modifier = Modifier.weight(1f)
                     )
                     StatMetricCard(
@@ -229,17 +244,6 @@ private fun TodayBattleCard(summary: TodayFitnessSummary, state: CharacterBattle
                         value = "${summary.exerciseMinutes} min",
                         color = AppColors.EnergyYellow,
                         progress = state.progressPercent,
-                        tuning = StatMetricCardTuning
-                        (
-                            progressOffsetX = 3.dp,
-                            progressOffsetY = 3.dp,
-                            valueOffsetX = 3.dp,
-                            valueOffsetY = 3.dp,
-                            iconOffsetX = 3.dp,
-                            iconOffsetY = 3.dp,
-                            labelOffsetX = 3.dp,
-                            labelOffsetY= 3.dp
-                        ),
                         modifier = Modifier.weight(1f)
                     )
                     StatMetricCard(
@@ -248,17 +252,6 @@ private fun TodayBattleCard(summary: TodayFitnessSummary, state: CharacterBattle
                         value = "${summary.caloriesBurned} kcal",
                         color = AppColors.PrimaryOrange,
                         progress = (summary.caloriesBurned / 500f).coerceIn(0f, 1f),
-                        tuning = StatMetricCardTuning
-                        (
-                            progressOffsetX = 3.dp,
-                            progressOffsetY = 3.dp,
-                            valueOffsetX = 3.dp,
-                            valueOffsetY = 3.dp,
-                            iconOffsetX = 3.dp,
-                            iconOffsetY = 3.dp,
-                            labelOffsetX = 3.dp,
-                            labelOffsetY= 3.dp
-                        ),
                         modifier = Modifier.weight(1f)
                     )
                 }
@@ -290,13 +283,18 @@ private fun DebugStateSwitcher(selectedMinutes: Int, onSelected: (Int) -> Unit) 
 }
 
 @Composable
-private fun DailyTaskCard(summary: TodayFitnessSummary) {
+private fun DailyTaskCard(
+    summary: TodayFitnessSummary,
+    onStartTraining: () -> Unit,
+    onOpenRecords: () -> Unit,
+    onAddWater: () -> Unit
+) {
     val tasks = buildDailyTasks(summary)
         .sortedWith(compareBy<DailyTaskUiItem> { it.done }.thenBy { it.order })
     val shouldScroll = tasks.size > 3
 
     BingoCard {
-        SectionTitle("今日任务")
+        SectionTitle(stringResource(R.string.home_tasks))
         if (shouldScroll) {
             val scrollState = rememberScrollState()
             Row(
@@ -313,7 +311,7 @@ private fun DailyTaskCard(summary: TodayFitnessSummary) {
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     tasks.forEach { task ->
-                        TaskRow(task.iconResId, task.label, task.reward, task.done, task.color)
+                        TaskRow(task.iconResId, task.label, task.reward, task.done, task.color, taskAction(task, summary, onStartTraining, onOpenRecords, onAddWater))
                     }
                 }
                 TaskScrollIndicator(scrollState, modifier = Modifier.fillMaxHeight())
@@ -321,7 +319,7 @@ private fun DailyTaskCard(summary: TodayFitnessSummary) {
         } else {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 tasks.forEach { task ->
-                    TaskRow(task.iconResId, task.label, task.reward, task.done, task.color)
+                    TaskRow(task.iconResId, task.label, task.reward, task.done, task.color, taskAction(task, summary, onStartTraining, onOpenRecords, onAddWater))
                 }
             }
         }
@@ -341,6 +339,19 @@ private data class DailyTaskUiItem(
     val done: Boolean,
     val color: Color
 )
+
+private fun taskAction(
+    task: DailyTaskUiItem,
+    summary: TodayFitnessSummary,
+    onStartTraining: () -> Unit,
+    onOpenRecords: () -> Unit,
+    onAddWater: () -> Unit
+): (() -> Unit)? = when (task.order) {
+    0, 4 -> onStartTraining
+    1, 3 -> onOpenRecords
+    2 -> if (summary.waterCups < 8) onAddWater else null
+    else -> null
+}
 
 private fun buildDailyTasks(summary: TodayFitnessSummary): List<DailyTaskUiItem> = listOf(
     DailyTaskUiItem(
@@ -364,7 +375,7 @@ private fun buildDailyTasks(summary: TodayFitnessSummary): List<DailyTaskUiItem>
         iconResId = R.drawable.today_task_water,
         label = "喝水 8 杯",
         reward = "奖励：恢复 +3",
-        done = summary.completedTaskCount >= 3,
+        done = summary.waterCups >= 8,
         color = AppColors.SoftBlue
     ),
     DailyTaskUiItem(
@@ -386,38 +397,27 @@ private fun buildDailyTasks(summary: TodayFitnessSummary): List<DailyTaskUiItem>
 )
 
 @Composable
-private fun HomeSummaryCards(summary: TodayFitnessSummary) {
+private fun HomeSummaryCards(
+    summary: TodayFitnessSummary,
+    records: BodyRecordsSummary,
+    onOpenRecords: () -> Unit,
+    onAddWater: () -> Unit
+) {
     Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
-        HomeSummaryCard(R.drawable.data_overview_weight, "体重(kg)", "72.0", AppColors.LightGreen, Modifier.weight(1f))
-        HomeSummaryCard(R.drawable.data_overview_exercise, "运动(min)", "${summary.exerciseMinutes}", AppColors.SoftBlue, Modifier.weight(1f))
-        HomeSummaryCard(R.drawable.data_overview_burn, "消耗(kcal)", "${summary.caloriesBurned}", AppColors.LightOrange, Modifier.weight(1f))
+        HomeSummaryCard(R.drawable.data_overview_weight, "体重", formatWeight(records.weightKg), AppColors.LightGreen, Modifier.weight(1f), onOpenRecords)
+        HomeSummaryCard(R.drawable.today_task_food, "饮食", records.foodIntakeKcal?.let { "$it kcal" } ?: "未记录", AppColors.SoftPurple, Modifier.weight(1f), onOpenRecords)
+        HomeSummaryCard(R.drawable.today_task_water, "饮水", "${summary.waterCups}/8 杯", AppColors.SoftBlue, Modifier.weight(1f), if (summary.waterCups < 8) onAddWater else null)
     }
 }
 
-@Composable
-internal fun ReminderCard(title: String = "今日提醒：", text: String) {
-    BingoCard(contentPadding = 12.dp, radius = 22.dp) {
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            Image(
-                painter = painterResource(R.drawable.tip_fat_icon),
-                contentDescription = title,
-                modifier = Modifier.size(54.dp),
-                contentScale = ContentScale.Fit
-            )
-            Column {
-                Text(title, color = AppColors.TextNavy, fontWeight = FontWeight.Black)
-                Text(text, color = AppColors.TextNavy, fontSize = 13.sp, lineHeight = 19.sp)
-            }
-        }
-    }
-}
+private fun formatWeight(weightKg: Double?): String = weightKg?.let { "${String.format("%.1f", it)} kg" } ?: "未记录"
 
 @Composable
-private fun HomeStartButton(modifier: Modifier = Modifier) {
+private fun HomeStartButton(modifier: Modifier = Modifier, onClick: () -> Unit) {
     Image(
         painter = painterResource(R.drawable.home_start_btn),
         contentDescription = "开始今日反击",
-        modifier = modifier.height(75.dp),
+        modifier = modifier.height(75.dp).clickable(onClick = onClick),
         contentScale = ContentScale.FillBounds
     )
 }
@@ -435,30 +435,8 @@ private fun BattleReportButton(text: String) {
         contentAlignment = Alignment.Center
     ) {
         Text(text, color = AppColors.PrimaryOrange, fontSize = 16.sp, fontWeight = FontWeight.Black)
-        Text("›", color = AppColors.BorderWarm, fontSize = 28.sp, modifier = Modifier.align(Alignment.CenterEnd))
     }
 }
-
-private data class StatMetricCardTuning(
-    val cardHeight: Dp = 54.dp,
-    val cardPaddingHorizontal: Dp = 5.dp,
-    val cardPaddingVertical: Dp = 5.dp,
-    val iconSize: Dp = 20.dp,
-    val iconOffsetX: Dp = 0.dp,
-    val iconOffsetY: Dp = 0.dp,
-    val labelOffsetX: Dp = 0.dp,
-    val labelOffsetY: Dp = 0.dp,
-    val labelFontSize: TextUnit = 10.sp,
-    val labelLineHeight: TextUnit = 12.sp,
-    val titleGap: Dp = 2.dp,
-    val progressValueGap: Dp = 4.dp,
-    val progressHeight: Dp = 4.dp,
-    val progressOffsetX: Dp = 0.dp,
-    val progressOffsetY: Dp = 0.dp,
-    val valueOffsetX: Dp = 0.dp,
-    val valueOffsetY: Dp = 0.dp,
-    val valueFontSize: TextUnit = 10.sp
-)
 
 @Composable
 private fun StatMetricCard(
@@ -467,50 +445,45 @@ private fun StatMetricCard(
     value: String,
     color: Color,
     progress: Float,
-    tuning: StatMetricCardTuning,
     modifier: Modifier
 ) {
     Column(
         modifier = modifier
-            .height(tuning.cardHeight)
+            .height(54.dp)
             .clip(RoundedCornerShape(14.dp))
             .background(Color.White.copy(alpha = 0.94f))
             .border(1.dp, AppColors.BorderWarm.copy(alpha = 0.58f), RoundedCornerShape(14.dp))
-            .padding(horizontal = tuning.cardPaddingHorizontal, vertical = tuning.cardPaddingVertical),
+            .padding(horizontal = 5.dp, vertical = 5.dp),
         verticalArrangement = Arrangement.SpaceBetween
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(tuning.titleGap))
-        {
+            horizontalArrangement = Arrangement.spacedBy(2.dp)
+        ) {
             Image(
                 painter = painterResource(iconResId),
                 contentDescription = label,
-                modifier = Modifier
-                    .size(tuning.iconSize)
-                    .offset(x = tuning.iconOffsetX, y = tuning.iconOffsetY),
+                modifier = Modifier.size(20.dp),
                 contentScale = ContentScale.Fit
             )
             Text(
                 label,
-                modifier = Modifier.offset(x = tuning.labelOffsetX, y = tuning.labelOffsetY),
                 color = AppColors.TextNavy,
-                fontSize = tuning.labelFontSize,
-                lineHeight = tuning.labelLineHeight,
+                fontSize = 10.sp,
+                lineHeight = 12.sp,
                 fontWeight = FontWeight.SemiBold,
                 maxLines = 2
             )
         }
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(tuning.progressValueGap))
-        {
+            horizontalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
             LinearProgressIndicator(
                 progress = { progress.coerceIn(0f, 1f) },
                 modifier = Modifier
                     .weight(1f)
-                    .height(tuning.progressHeight)
-                    .offset(x = tuning.progressOffsetX, y = tuning.progressOffsetY)
+                    .height(4.dp)
                     .clip(RoundedCornerShape(99.dp)),
                 color = color,
                 trackColor = AppColors.BorderWarm.copy(alpha = 0.54f)
@@ -518,9 +491,8 @@ private fun StatMetricCard(
             Text(
                 value,
                 color = AppColors.TextNavy,
-                fontSize = tuning.valueFontSize,
+                fontSize = 10.sp,
                 fontWeight = FontWeight.Black,
-                modifier = Modifier.offset(x = tuning.valueOffsetX, y = tuning.valueOffsetY),
                 maxLines = 1
             )
         }
@@ -528,11 +500,19 @@ private fun StatMetricCard(
 }
 
 @Composable
-private fun TaskRow(iconResId: Int, label: String, reward: String, done: Boolean, color: Color) {
+private fun TaskRow(
+    iconResId: Int,
+    label: String,
+    reward: String,
+    done: Boolean,
+    color: Color,
+    onClick: (() -> Unit)?
+) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(16.dp))
+            .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
             .border(1.dp, AppColors.BorderWarm.copy(alpha = 0.65f), RoundedCornerShape(16.dp))
             .padding(10.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -574,10 +554,18 @@ private fun TaskRow(iconResId: Int, label: String, reward: String, done: Boolean
 }
 
 @Composable
-private fun HomeSummaryCard(iconResId: Int, label: String, value: String, color: Color, modifier: Modifier) {
+private fun HomeSummaryCard(
+    iconResId: Int,
+    label: String,
+    value: String,
+    color: Color,
+    modifier: Modifier,
+    onClick: (() -> Unit)?
+) {
     Row(
         modifier = modifier
             .clip(RoundedCornerShape(18.dp))
+            .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
             .background(AppColors.CardWhite)
             .border(1.dp, AppColors.BorderWarm.copy(alpha = 0.72f), RoundedCornerShape(18.dp))
             .padding(horizontal = 8.dp, vertical = 10.dp),

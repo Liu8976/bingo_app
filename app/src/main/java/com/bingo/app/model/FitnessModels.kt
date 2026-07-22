@@ -9,7 +9,41 @@ data class TodayFitnessSummary(
     val totalTaskCount: Int,
     val hasFoodLog: Boolean,
     val hasWeightLog: Boolean,
+    val waterCups: Int,
     val streakDays: Int
+)
+
+data class WeightRecord(
+    val epochDay: Long,
+    val weightKg: Double
+)
+
+data class ExerciseRecord(
+    val epochDay: Long,
+    val durationMinutes: Int,
+    val caloriesBurned: Int
+)
+
+// 身体档案只包含已经记录的数据；没有记录时由 UI 展示明确的空状态。
+data class BodyRecordsSummary(
+    val weightKg: Double? = null,
+    val weightChangeWeekKg: Double? = null,
+    val weightHistory: List<WeightRecord> = emptyList(),
+    val foodIntakeKcal: Int? = null,
+    val foodTargetKcal: Int = 1700,
+    val foodRemainingKcal: Int? = null,
+    val exerciseMinutes: Int = 0,
+    val exerciseCaloriesBurned: Int = 0,
+    val exerciseHistory: List<ExerciseRecord> = emptyList()
+)
+
+data class TrainingOption(
+    val id: String,
+    val title: String,
+    val subtitle: String,
+    val durationMinutes: Int,
+    val intensity: String,
+    val estimatedCalories: Int
 )
 
 enum class FatMonsterState {
@@ -44,18 +78,3 @@ data class CharacterBattleState(
     val progressPercent: Float,
     val isGoalCompleted: Boolean
 )
-
-enum class CharacterAssetKey(val resourceName: String) {
-    FatMonsterNormal("fat_monster_normal"),
-    FatMonsterLazy("fat_monster_lazy"),
-    FatMonsterTeasing("fat_monster_teasing"),
-    FatMonsterNervous("fat_monster_nervous"),
-    FatMonsterWeakened("fat_monster_weakened"),
-    FatMonsterDefeated("fat_monster_defeated"),
-    MuscleBuddyNormal("muscle_buddy_normal"),
-    MuscleBuddySleepy("muscle_buddy_sleepy"),
-    MuscleBuddyReady("muscle_buddy_ready"),
-    MuscleBuddyActive("muscle_buddy_active"),
-    MuscleBuddyPowered("muscle_buddy_powered"),
-    MuscleBuddyVictory("muscle_buddy_victory")
-}

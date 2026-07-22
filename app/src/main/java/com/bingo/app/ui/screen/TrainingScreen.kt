@@ -1,5 +1,6 @@
 package com.bingo.app.ui.screen
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -31,15 +32,20 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.bingo.app.R
+import com.bingo.app.mock.LeaderboardRunner
 import com.bingo.app.mock.MockBingoData
+import com.bingo.app.model.MuscleBuddyState
+import com.bingo.app.model.TrainingOption
 import com.bingo.app.ui.BingoCard
-import com.bingo.app.ui.ImageCircleIcon
+import com.bingo.app.ui.CharacterAvatar
 import com.bingo.app.ui.OutlineOrangeButton
+import com.bingo.app.ui.PageHeader
 import com.bingo.app.ui.PrimaryGradientButton
 import com.bingo.app.ui.RewardChip
 import com.bingo.app.ui.ScreenList
@@ -104,34 +110,41 @@ private enum class LeaderboardCategory(
     )
 }
 
-private data class LeaderboardRunner(
-    val name: String,
-    val value: String,
-    val note: String,
-    val badge: String,
-    val isMe: Boolean = false
-)
-
 @Composable
-fun TrainingScreen() {
+fun TrainingScreen(onTrainingCompleted: (TrainingOption) -> Unit) {
     var activeLeaderboard by rememberSaveable { mutableStateOf<LeaderboardCategory?>(null) }
+    var selectedTrainingId by rememberSaveable { mutableStateOf<String?>(null) }
+    val selectedTraining = MockBingoData.trainingTypes.firstOrNull { it.id == selectedTrainingId }
 
-    if (activeLeaderboard == null) {
+    BackHandler(enabled = selectedTraining != null || activeLeaderboard != null) {
+        if (selectedTraining != null) selectedTrainingId = null else activeLeaderboard = null
+    }
+
+    if (selectedTraining != null) {
+        TrainingDetailScreen(
+            training = selectedTraining,
+            onBack = { selectedTrainingId = null },
+            onComplete = {
+                selectedTrainingId = null
+                onTrainingCompleted(selectedTraining)
+            }
+        )
+    } else if (activeLeaderboard == null) {
         ScreenList {
             item {
                 PageHeader(
-                    title = "今天想怎么反击？",
-                    subtitle = "选一个训练，给脂肪怪来点压力。",
-                    trailing = {
-                        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                            ImageCircleIcon(R.drawable.calendar_button, "训练日历")
-                            ImageCircleIcon(R.drawable.trophy_button, "训练奖杯")
-                        }
-                    }
+                    title = stringResource(R.string.training_title),
+                    subtitle = stringResource(R.string.training_subtitle),
+                    trailing = { CharacterAvatar(MuscleBuddyState.Ready) }
                 )
             }
-            item { TrainingHeroCard() }
-            item { TrainingTypeGrid() }
+            item {
+                TrainingHeroCard(
+                    training = MockBingoData.recommendedTraining,
+                    onClick = { selectedTrainingId = MockBingoData.recommendedTraining.id }
+                )
+            }
+            item { TrainingTypeGrid(onTrainingSelected = { selectedTrainingId = it.id }) }
             item {
                 RunningLeaderboardCard(
                     onCategoryClick = { activeLeaderboard = it },
@@ -149,7 +162,56 @@ fun TrainingScreen() {
 }
 
 @Composable
-private fun TrainingHeroCard() {
+private fun TrainingDetailScreen(
+    training: TrainingOption,
+    onBack: () -> Unit,
+    onComplete: () -> Unit
+) {
+    ScreenList {
+        item {
+            Text(
+                text = stringResource(R.string.back),
+                modifier = Modifier.clickable(onClick = onBack).padding(8.dp),
+                color = AppColors.PrimaryOrange,
+                fontSize = 15.sp,
+                fontWeight = FontWeight.Black
+            )
+        }
+        item {
+            PageHeader(
+                title = training.title,
+                subtitle = training.subtitle,
+                trailing = { CharacterAvatar(MuscleBuddyState.Active) }
+            )
+        }
+        item {
+            BingoCard {
+                SectionTitle("本次训练")
+                Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
+                    MetricTile("时长", "${training.durationMinutes} 分钟", AppColors.PrimaryOrange, Modifier.weight(1f))
+                    MetricTile("强度", training.intensity, AppColors.GrowthGreen, Modifier.weight(1f))
+                    MetricTile("预计消耗", "${training.estimatedCalories} kcal", AppColors.Purple, Modifier.weight(1f))
+                }
+                Text(
+                    "离线 MVP 暂不提供视频跟练。完成你选择的训练后，点击下方按钮记录本次成果。",
+                    color = AppColors.TextSecondary,
+                    fontSize = 13.sp,
+                    lineHeight = 19.sp
+                )
+            }
+        }
+        item {
+            PrimaryGradientButton(
+                text = stringResource(R.string.training_complete),
+                modifier = Modifier.fillMaxWidth(),
+                onClick = onComplete
+            )
+        }
+    }
+}
+
+@Composable
+private fun TrainingHeroCard(training: TrainingOption, onClick: () -> Unit) {
     BingoCard(contentPadding = 0.dp) {
         Box(
             modifier = Modifier
@@ -161,7 +223,7 @@ private fun TrainingHeroCard() {
         ) {
             Image(
                 painter = painterResource(R.drawable.illustration_training_hero),
-                contentDescription = "Training hero illustration",
+                contentDescription = null,
                 modifier = Modifier
                     .align(Alignment.CenterEnd)
                     .fillMaxHeight()
@@ -177,21 +239,21 @@ private fun TrainingHeroCard() {
                         .height(30.dp)
                 )
                 Spacer(Modifier.height(12.dp))
-                Text("全身燃脂训练", color = AppColors.TextNavy, fontSize = 20.sp, lineHeight = 35.sp, fontWeight = FontWeight.Black)
-                Text("30 分钟 · 中等强度 · 预计 220 kcal", color = AppColors.TextSecondary, fontSize = 14.sp)
+                Text(training.title, color = AppColors.TextNavy, fontSize = 20.sp, lineHeight = 35.sp, fontWeight = FontWeight.Black)
+                Text("${training.durationMinutes} 分钟 · ${training.intensity} · 预计 ${training.estimatedCalories} kcal", color = AppColors.TextSecondary, fontSize = 14.sp)
                 Spacer(Modifier.height(12.dp))
                 SpeechBubble("肌肉伙伴已热身，脂肪怪还在嘴硬。", Color.White, AppColors.BorderWarm, Modifier.width(160.dp))
                 Spacer(Modifier.weight(1f))
-                PrimaryGradientButton("开始训练", modifier = Modifier.fillMaxWidth().height(45.dp))
+                PrimaryGradientButton(stringResource(R.string.training_view), modifier = Modifier.fillMaxWidth().height(45.dp), onClick = onClick)
             }
         }
     }
 }
 
 @Composable
-private fun TrainingTypeGrid() {
+private fun TrainingTypeGrid(onTrainingSelected: (TrainingOption) -> Unit) {
     BingoCard {
-        SectionTitle("训练类型")
+        SectionTitle(stringResource(R.string.training_types))
         val trainingIcons = listOf(
             R.drawable.training_type_run,
             R.drawable.training_type_burn,
@@ -205,10 +267,11 @@ private fun TrainingTypeGrid() {
                 row.forEach { item ->
                     val itemIndex = MockBingoData.trainingTypes.indexOf(item)
                     TrainingTypeCard(
-                        title = item.first,
-                        subtitle = item.second,
+                        title = item.title,
+                        subtitle = item.subtitle,
                         iconResId = trainingIcons[itemIndex],
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier.weight(1f),
+                        onClick = { onTrainingSelected(item) }
                     )
                 }
                 if (row.size == 1) Spacer(Modifier.weight(1f))
@@ -222,10 +285,7 @@ private fun RunningLeaderboardCard(
     onCategoryClick: (LeaderboardCategory) -> Unit,
     onViewAllClick: () -> Unit
 ) {
-    val currentRankText = "第 18 名" // TODO: Replace with ranking logic.
-    val weeklyDistanceText = "8.6 km" // TODO: Replace with API or calculated weekly distance.
-    val chaseDistanceText = "1.2km" // TODO: Replace with API or calculated chase distance.
-    val chaseHintText = "可超越前一名" // TODO: Replace with API or calculated chase hint.
+    val overview = LeaderboardCategory.Overall
 
     BingoCard {
         Box(modifier = Modifier.fillMaxWidth()) {
@@ -261,9 +321,9 @@ private fun RunningLeaderboardCard(
                         )
                     }
                     Column(verticalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.weight(1.1f)) {
-                        LeaderMetric(R.drawable.leaderboard_metric_rank_transparent, "当前排名：", currentRankText, AppColors.GrowthGreen)
-                        LeaderMetric(R.drawable.leaderboard_metric_distance_transparent, "本周距离：", weeklyDistanceText, AppColors.Blue)
-                        LeaderMetric(R.drawable.leaderboard_metric_chase_transparent, "再跑", chaseDistanceText, AppColors.PrimaryOrange,chaseHintText)
+                        LeaderMetric(R.drawable.leaderboard_metric_rank_transparent, "当前排名：", overview.myRank, AppColors.GrowthGreen)
+                        LeaderMetric(R.drawable.leaderboard_metric_distance_transparent, "本周距离：", overview.myValue, AppColors.Blue)
+                        LeaderMetric(R.drawable.leaderboard_metric_chase_transparent, "再跑", overview.chaseValue, AppColors.PrimaryOrange, "可超越前一名")
                     }
                 }
                 OutlineOrangeButton("查看排行榜", onClick = onViewAllClick)
@@ -282,8 +342,8 @@ private fun RunningLeaderboardDetailScreen(
         item {
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 Text(
-                    text = "返回",
-                    modifier = Modifier.clickable(onClick = onBack),
+                    text = stringResource(R.string.back),
+                    modifier = Modifier.clickable(onClick = onBack).padding(8.dp),
                     color = AppColors.PrimaryOrange,
                     fontSize = 15.sp,
                     fontWeight = FontWeight.Black
@@ -291,9 +351,7 @@ private fun RunningLeaderboardDetailScreen(
                 PageHeader(
                     title = "跑路排行榜",
                     subtitle = selectedCategory.subtitle,
-                    trailing = {
-                        ImageCircleIcon(R.drawable.trophy_button, "跑路排行榜")
-                    }
+                    trailing = { CharacterAvatar(MuscleBuddyState.Powered) }
                 )
             }
         }
@@ -334,7 +392,7 @@ private fun RunningLeaderboardDetailScreen(
         item {
             BingoCard {
                 SectionTitle(selectedCategory.title)
-                leaderboardRows(selectedCategory).forEachIndexed { index, row ->
+                MockBingoData.leaderboardRows[selectedCategory.title].orEmpty().forEachIndexed { index, row ->
                     LeaderboardRow(rank = index + 1, row = row, category = selectedCategory)
                 }
             }
@@ -382,7 +440,7 @@ private fun LeaderboardChip(
 
     Box(
         modifier = modifier
-            .height(30.dp)
+            .height(44.dp)
             .clip(RoundedCornerShape(99.dp))
             .clickable { onClick(category) }
             .background(background)
@@ -436,56 +494,19 @@ private fun LeaderboardRow(rank: Int, row: LeaderboardRunner, category: Leaderbo
     }
 }
 
-private fun leaderboardRows(category: LeaderboardCategory): List<LeaderboardRunner> {
-    return when (category) {
-        LeaderboardCategory.Overall -> listOf(
-            LeaderboardRunner("奶茶抵抗者", "18.4 km", "本周户外跑 5 次", "领跑中"),
-            LeaderboardRunner("跑步跑路王", "16.9 km", "平均配速 6'18\"", "稳得很"),
-            LeaderboardRunner("自律钉子户", "14.2 km", "连续 4 天完成训练", "前三"),
-            LeaderboardRunner("火锅幸存者", "9.8 km", "今天刚追加 2.0km", "追击中"),
-            LeaderboardRunner("我", "8.6 km", "再跑 1.2km 可超越前一名", "第 18 名", isMe = true),
-            LeaderboardRunner("肌肉伙伴饲养员", "7.9 km", "晚间训练已预约", "紧跟")
-        )
-        LeaderboardCategory.Progress -> listOf(
-            LeaderboardRunner("火锅幸存者", "+68%", "上周 4.1km，本周 6.9km", "进步王"),
-            LeaderboardRunner("小蛋白", "+54%", "室内燃脂次数翻倍", "猛冲"),
-            LeaderboardRunner("我", "+32%", "本周训练更稳定了", "第 9 名", isMe = true),
-            LeaderboardRunner("跑步跑路王", "+27%", "多完成 2 次户外跑", "加速"),
-            LeaderboardRunner("奶茶抵抗者", "+19%", "周末补了一段长跑", "稳住")
-        )
-        LeaderboardCategory.Streak -> listOf(
-            LeaderboardRunner("自律钉子户", "14 天", "每天至少 20 分钟", "不掉线"),
-            LeaderboardRunner("奶茶抵抗者", "11 天", "训练日历全亮", "连胜"),
-            LeaderboardRunner("跑步跑路王", "8 天", "晨跑习惯养成中", "稳"),
-            LeaderboardRunner("我", "6 天", "今天完成后继续连上", "第 12 名", isMe = true),
-            LeaderboardRunner("火锅幸存者", "5 天", "放纵餐后也没停", "靠谱")
-        )
-        LeaderboardCategory.Burn -> listOf(
-            LeaderboardRunner("跑步跑路王", "1,420 kcal", "本周 6 次训练", "燃脂王"),
-            LeaderboardRunner("自律钉子户", "1,160 kcal", "力量和跑步都安排了", "高能"),
-            LeaderboardRunner("奶茶抵抗者", "980 kcal", "奶茶债快还清了", "优秀"),
-            LeaderboardRunner("我", "680 kcal", "再燃 90 kcal 可超越前一名", "第 15 名", isMe = true),
-            LeaderboardRunner("火锅幸存者", "610 kcal", "今晚还有一练", "追上来")
-        )
-    }
-}
-
 @Composable
-private fun LeaderboardDecoration(imageResId: Int, modifier: Modifier = Modifier) {
-    Image(
-        painter = painterResource(imageResId),
-        contentDescription = null,
-        modifier = modifier,
-        contentScale = ContentScale.Fit
-    )
-}
-
-@Composable
-private fun TrainingTypeCard(title: String, subtitle: String, iconResId: Int, modifier: Modifier) {
+private fun TrainingTypeCard(
+    title: String,
+    subtitle: String,
+    iconResId: Int,
+    modifier: Modifier,
+    onClick: () -> Unit
+) {
     Row(
         modifier = modifier
             .height(60.dp)
             .clip(RoundedCornerShape(20.dp))
+            .clickable(onClick = onClick)
             .background(Color.White)
             .border(1.dp, AppColors.BorderWarm.copy(alpha = 0.72f), RoundedCornerShape(20.dp))
             .padding(5.dp),

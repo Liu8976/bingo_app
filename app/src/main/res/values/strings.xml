@@ -1,0 +1,34 @@
+<resources>
+    <string name="app_name">Bingo</string>
+    <string name="nav_today">今日</string>
+    <string name="nav_training">训练</string>
+    <string name="nav_records">记录</string>
+    <string name="nav_community">广场</string>
+    <string name="nav_profile">我的</string>
+
+    <string name="home_title">早上好，今天准备反击了吗？</string>
+    <string name="home_goal">今日目标：运动 30 分钟 · 饮水 2L</string>
+    <string name="home_tasks">今日任务</string>
+    <string name="home_view_report">查看今日战报</string>
+    <string name="home_report_confirm">知道了</string>
+
+    <string name="training_title">今天想怎么反击？</string>
+    <string name="training_subtitle">选一个训练，给脂肪怪来点压力。</string>
+    <string name="training_types">训练类型</string>
+    <string name="training_view">查看训练</string>
+    <string name="training_complete">完成并记录训练</string>
+    <string name="back">返回</string>
+
+    <string name="records_title">身体档案</string>
+    <string name="records_subtitle">记录真实变化，关注长期趋势。</string>
+    <string name="records_weight">体重趋势</string>
+    <string name="records_food">饮食记录</string>
+    <string name="records_exercise">运动记录</string>
+    <string name="records_save">保存</string>
+    <string name="cancel">取消</string>
+
+    <string name="community_title">反脂广场</string>
+    <string name="community_subtitle">晒真实生活，不晒完美人设。</string>
+    <string name="profile_titles">我的称号</string>
+    <string name="profile_achievements">我的成就</string>
+</resources>

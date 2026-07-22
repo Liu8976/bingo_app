@@ -9,13 +9,14 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.bingo.app.data.BingoViewModel
 import com.bingo.app.logic.CharacterBattleStateCalculator
-import com.bingo.app.mock.MockBingoData
 import com.bingo.app.ui.BingoBottomBar
 import com.bingo.app.ui.BingoTab
 import com.bingo.app.ui.screen.CommunityScreen
@@ -39,9 +40,10 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun BingoApp() {
+    val bingoViewModel: BingoViewModel = viewModel()
+    val summary by bingoViewModel.todaySummary.collectAsStateWithLifecycle()
+    val records by bingoViewModel.bodyRecords.collectAsStateWithLifecycle()
     var selectedTab by rememberSaveable { mutableStateOf(BingoTab.Today) }
-    var debugMinutes by rememberSaveable { mutableIntStateOf(0) }
-    val summary = MockBingoData.todaySummary(debugMinutes)
     val battleState = CharacterBattleStateCalculator.calculate(summary)
 
     Scaffold(
@@ -60,11 +62,24 @@ fun BingoApp() {
                 BingoTab.Today -> HomeScreen(
                     summary = summary,
                     battleState = battleState,
-                    debugMinutes = debugMinutes,
-                    onDebugMinutesChanged = { debugMinutes = it }
+                    records = records,
+                    debugMinutes = summary.exerciseMinutes,
+                    onDebugMinutesChanged = bingoViewModel::setDebugMinutes,
+                    onStartTraining = { selectedTab = BingoTab.Training },
+                    onOpenRecords = { selectedTab = BingoTab.Records },
+                    onAddWater = bingoViewModel::addWaterCup
                 )
-                BingoTab.Training -> TrainingScreen()
-                BingoTab.Records -> RecordsScreen()
+                BingoTab.Training -> TrainingScreen(
+                    onTrainingCompleted = { training ->
+                        bingoViewModel.completeTraining(training)
+                        selectedTab = BingoTab.Today
+                    }
+                )
+                BingoTab.Records -> RecordsScreen(
+                    records = records,
+                    onLogWeight = bingoViewModel::logWeight,
+                    onLogFoodIntake = bingoViewModel::logFoodIntake
+                )
                 BingoTab.Community -> CommunityScreen()
                 BingoTab.Profile -> ProfileScreen()
             }
