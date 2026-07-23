@@ -19,8 +19,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -40,7 +42,9 @@ import androidx.compose.ui.unit.sp
 import com.bingo.app.R
 import com.bingo.app.mock.LeaderboardRunner
 import com.bingo.app.mock.MockBingoData
+import com.bingo.app.model.FollowAlongVideo
 import com.bingo.app.model.MuscleBuddyState
+import com.bingo.app.model.StrengthBodyArea
 import com.bingo.app.model.TrainingOption
 import com.bingo.app.ui.BingoCard
 import com.bingo.app.ui.CharacterAvatar
@@ -52,6 +56,7 @@ import com.bingo.app.ui.ScreenList
 import com.bingo.app.ui.SectionTitle
 import com.bingo.app.ui.SpeechBubble
 import com.bingo.app.ui.theme.AppColors
+import kotlinx.coroutines.delay
 
 private enum class LeaderboardCategory(
     val title: String,
@@ -114,13 +119,45 @@ private enum class LeaderboardCategory(
 fun TrainingScreen(onTrainingCompleted: (TrainingOption) -> Unit) {
     var activeLeaderboard by rememberSaveable { mutableStateOf<LeaderboardCategory?>(null) }
     var selectedTrainingId by rememberSaveable { mutableStateOf<String?>(null) }
+    var selectedBodyAreaId by rememberSaveable { mutableStateOf<String?>(null) }
+    var selectedVideoId by rememberSaveable { mutableStateOf<String?>(null) }
     val selectedTraining = MockBingoData.trainingTypes.firstOrNull { it.id == selectedTrainingId }
+    val selectedBodyArea = MockBingoData.strengthBodyAreas.firstOrNull { it.id == selectedBodyAreaId }
+    val selectedVideo = selectedBodyArea?.videos?.firstOrNull { it.id == selectedVideoId }
 
-    BackHandler(enabled = selectedTraining != null || activeLeaderboard != null) {
-        if (selectedTraining != null) selectedTrainingId = null else activeLeaderboard = null
+    BackHandler(
+        enabled = selectedVideo != null ||
+            selectedBodyArea != null ||
+            selectedTraining != null ||
+            activeLeaderboard != null
+    ) {
+        when {
+            selectedVideo != null -> selectedVideoId = null
+            selectedBodyArea != null -> selectedBodyAreaId = null
+            selectedTraining != null -> selectedTrainingId = null
+            else -> activeLeaderboard = null
+        }
     }
 
-    if (selectedTraining != null) {
+    if (selectedVideo != null && selectedBodyArea != null) {
+        StrengthFollowAlongScreen(
+            area = selectedBodyArea,
+            video = selectedVideo,
+            onBack = { selectedVideoId = null },
+            onFinish = { selectedVideoId = null }
+        )
+    } else if (selectedBodyArea != null) {
+        StrengthVideoListScreen(
+            area = selectedBodyArea,
+            onBack = { selectedBodyAreaId = null },
+            onVideoSelected = { selectedVideoId = it.id }
+        )
+    } else if (selectedTraining?.id == "strength") {
+        StrengthBodyAreaScreen(
+            onBack = { selectedTrainingId = null },
+            onBodyAreaSelected = { selectedBodyAreaId = it.id }
+        )
+    } else if (selectedTraining != null) {
         TrainingDetailScreen(
             training = selectedTraining,
             onBack = { selectedTrainingId = null },
@@ -162,21 +199,324 @@ fun TrainingScreen(onTrainingCompleted: (TrainingOption) -> Unit) {
 }
 
 @Composable
+private fun StrengthBodyAreaScreen(
+    onBack: () -> Unit,
+    onBodyAreaSelected: (StrengthBodyArea) -> Unit
+) {
+    ScreenList {
+        item { TrainingBackButton(onBack) }
+        item {
+            PageHeader(
+                title = "力量训练",
+                subtitle = "先选今天要强化的身体部位，每段跟练都不超过 1 分钟。",
+                trailing = { CharacterAvatar(MuscleBuddyState.Active) }
+            )
+        }
+        item {
+            BingoCard {
+                SectionTitle("选择身体分区")
+                Text(
+                    "覆盖手臂、肩、胸、背、腹、臀髋、腿和全身。建议先从入门短片开始，动作不适时立即停止。",
+                    color = AppColors.TextSecondary,
+                    fontSize = 13.sp,
+                    lineHeight = 19.sp
+                )
+                MockBingoData.strengthBodyAreas.chunked(2).forEachIndexed { rowIndex, row ->
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        row.forEachIndexed { columnIndex, area ->
+                            StrengthBodyAreaCard(
+                                area = area,
+                                color = strengthAreaColor(rowIndex * 2 + columnIndex),
+                                modifier = Modifier.weight(1f),
+                                onClick = { onBodyAreaSelected(area) }
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun StrengthBodyAreaCard(
+    area: StrengthBodyArea,
+    color: Color,
+    modifier: Modifier,
+    onClick: () -> Unit
+) {
+    Column(
+        modifier = modifier
+            .height(142.dp)
+            .clip(RoundedCornerShape(22.dp))
+            .clickable(onClick = onClick)
+            .background(color.copy(alpha = 0.11f))
+            .border(1.dp, color.copy(alpha = 0.32f), RoundedCornerShape(22.dp))
+            .padding(12.dp),
+        verticalArrangement = Arrangement.spacedBy(5.dp)
+    ) {
+        Box(
+            modifier = Modifier
+                .size(34.dp)
+                .clip(RoundedCornerShape(12.dp))
+                .background(color),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(area.title.take(1), color = Color.White, fontWeight = FontWeight.Black)
+        }
+        Text(area.title, color = AppColors.TextNavy, fontSize = 16.sp, fontWeight = FontWeight.Black)
+        Text(area.subtitle, color = AppColors.TextSecondary, fontSize = 11.sp, lineHeight = 15.sp)
+        Spacer(Modifier.weight(1f))
+        Text("${area.videos.size} 段短视频  ›", color = color, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+    }
+}
+
+@Composable
+private fun StrengthVideoListScreen(
+    area: StrengthBodyArea,
+    onBack: () -> Unit,
+    onVideoSelected: (FollowAlongVideo) -> Unit
+) {
+    val areaIndex = MockBingoData.strengthBodyAreas.indexOfFirst { it.id == area.id }.coerceAtLeast(0)
+    val areaColor = strengthAreaColor(areaIndex)
+
+    ScreenList {
+        item { TrainingBackButton(onBack) }
+        item {
+            PageHeader(
+                title = "${area.title}跟练",
+                subtitle = area.focus,
+                trailing = { CharacterAvatar(MuscleBuddyState.Powered) }
+            )
+        }
+        item {
+            BingoCard {
+                SectionTitle("选择一段短视频")
+                Text(
+                    "每段均为 60 秒内的单动作跟练。开始前留出安全空间，并根据自身情况控制幅度。",
+                    color = AppColors.TextSecondary,
+                    fontSize = 13.sp,
+                    lineHeight = 19.sp
+                )
+                area.videos.forEachIndexed { index, video ->
+                    StrengthVideoCard(
+                        index = index + 1,
+                        video = video,
+                        color = areaColor,
+                        onClick = { onVideoSelected(video) }
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun StrengthVideoCard(
+    index: Int,
+    video: FollowAlongVideo,
+    color: Color,
+    onClick: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(20.dp))
+            .clickable(onClick = onClick)
+            .background(AppColors.Background)
+            .border(1.dp, color.copy(alpha = 0.22f), RoundedCornerShape(20.dp))
+            .padding(12.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box(
+            modifier = Modifier
+                .size(58.dp)
+                .clip(RoundedCornerShape(18.dp))
+                .background(color.copy(alpha = 0.14f)),
+            contentAlignment = Alignment.Center
+        ) {
+            Text("▶", color = color, fontSize = 22.sp, fontWeight = FontWeight.Black)
+        }
+        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Text("短片 $index · ${video.title}", color = AppColors.TextNavy, fontSize = 15.sp, fontWeight = FontWeight.Black)
+            Text("${video.durationSeconds} 秒 · ${video.intensity}", color = color, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+            Text(video.instruction, color = AppColors.TextSecondary, fontSize = 12.sp, lineHeight = 17.sp)
+        }
+        Text("›", color = AppColors.TextSecondary, fontSize = 24.sp)
+    }
+}
+
+@Composable
+private fun StrengthFollowAlongScreen(
+    area: StrengthBodyArea,
+    video: FollowAlongVideo,
+    onBack: () -> Unit,
+    onFinish: () -> Unit
+) {
+    var elapsedSeconds by rememberSaveable(video.id) { mutableStateOf(0) }
+    var isPlaying by rememberSaveable(video.id) { mutableStateOf(false) }
+    val isFinished = elapsedSeconds >= video.durationSeconds
+    val progress = (elapsedSeconds.toFloat() / video.durationSeconds).coerceIn(0f, 1f)
+    val cueIndex = ((progress * video.cues.size).toInt()).coerceIn(0, video.cues.lastIndex)
+    val areaIndex = MockBingoData.strengthBodyAreas.indexOfFirst { it.id == area.id }.coerceAtLeast(0)
+    val areaColor = strengthAreaColor(areaIndex)
+
+    LaunchedEffect(isPlaying, elapsedSeconds, video.durationSeconds) {
+        if (isPlaying && elapsedSeconds < video.durationSeconds) {
+            delay(1_000)
+            elapsedSeconds += 1
+            if (elapsedSeconds >= video.durationSeconds) isPlaying = false
+        }
+    }
+
+    ScreenList {
+        item { TrainingBackButton(onBack) }
+        item {
+            PageHeader(
+                title = video.title,
+                subtitle = "${area.title} · ${video.durationSeconds} 秒 · ${video.intensity}",
+                trailing = { CharacterAvatar(if (isFinished) MuscleBuddyState.Victory else MuscleBuddyState.Active) }
+            )
+        }
+        item {
+            BingoCard(contentPadding = 0.dp) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(285.dp)
+                        .clip(RoundedCornerShape(28.dp))
+                        .background(
+                            Brush.verticalGradient(
+                                listOf(areaColor.copy(alpha = 0.20f), AppColors.TextNavy)
+                            )
+                        )
+                        .padding(20.dp)
+                ) {
+                    Text(
+                        text = if (isFinished) "完成" else area.title,
+                        color = Color.White.copy(alpha = 0.72f),
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.align(Alignment.TopStart)
+                    )
+                    Column(
+                        modifier = Modifier.align(Alignment.Center),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Text(
+                            if (isFinished) "✓" else if (isPlaying) "Ⅱ" else "▶",
+                            color = Color.White,
+                            fontSize = 52.sp,
+                            fontWeight = FontWeight.Black
+                        )
+                        Text(
+                            if (isFinished) "这一段练完了" else video.cues[cueIndex],
+                            color = Color.White,
+                            fontSize = 21.sp,
+                            fontWeight = FontWeight.Black,
+                            textAlign = TextAlign.Center
+                        )
+                        Text(
+                            if (isFinished) "做得漂亮，先调整呼吸。" else video.instruction,
+                            color = Color.White.copy(alpha = 0.82f),
+                            fontSize = 13.sp,
+                            lineHeight = 19.sp,
+                            textAlign = TextAlign.Center
+                        )
+                    }
+                    Text(
+                        text = formatVideoTime(video.durationSeconds - elapsedSeconds),
+                        color = Color.White,
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Black,
+                        modifier = Modifier.align(Alignment.BottomEnd)
+                    )
+                }
+            }
+        }
+        item {
+            BingoCard {
+                LinearProgressIndicator(
+                    progress = { progress },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(8.dp)
+                        .clip(RoundedCornerShape(99.dp)),
+                    color = areaColor,
+                    trackColor = areaColor.copy(alpha = 0.14f)
+                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(formatVideoTime(elapsedSeconds), color = AppColors.TextSecondary, fontSize = 12.sp)
+                    Text(formatVideoTime(video.durationSeconds), color = AppColors.TextSecondary, fontSize = 12.sp)
+                }
+                if (isFinished) {
+                    PrimaryGradientButton(
+                        text = "完成本段",
+                        modifier = Modifier.fillMaxWidth(),
+                        onClick = onFinish
+                    )
+                    OutlineOrangeButton(
+                        text = "再练一次",
+                        onClick = {
+                            elapsedSeconds = 0
+                            isPlaying = true
+                        }
+                    )
+                } else {
+                    PrimaryGradientButton(
+                        text = if (isPlaying) "暂停跟练" else if (elapsedSeconds == 0) "开始跟练" else "继续跟练",
+                        modifier = Modifier.fillMaxWidth(),
+                        onClick = { isPlaying = !isPlaying }
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun TrainingBackButton(onClick: () -> Unit) {
+    Text(
+        text = stringResource(R.string.back),
+        modifier = Modifier.clickable(onClick = onClick).padding(8.dp),
+        color = AppColors.PrimaryOrange,
+        fontSize = 15.sp,
+        fontWeight = FontWeight.Black
+    )
+}
+
+private fun strengthAreaColor(index: Int): Color = listOf(
+    AppColors.PrimaryOrange,
+    AppColors.Purple,
+    AppColors.AlertRed,
+    AppColors.Blue,
+    AppColors.GrowthGreen,
+    Color(0xFFE39A00),
+    Color(0xFF2B9FA3),
+    Color(0xFF7D5CE7)
+)[index % 8]
+
+private fun formatVideoTime(totalSeconds: Int): String {
+    val safeSeconds = totalSeconds.coerceAtLeast(0)
+    return "%d:%02d".format(safeSeconds / 60, safeSeconds % 60)
+}
+
+@Composable
 private fun TrainingDetailScreen(
     training: TrainingOption,
     onBack: () -> Unit,
     onComplete: () -> Unit
 ) {
     ScreenList {
-        item {
-            Text(
-                text = stringResource(R.string.back),
-                modifier = Modifier.clickable(onClick = onBack).padding(8.dp),
-                color = AppColors.PrimaryOrange,
-                fontSize = 15.sp,
-                fontWeight = FontWeight.Black
-            )
-        }
+        item { TrainingBackButton(onBack) }
         item {
             PageHeader(
                 title = training.title,

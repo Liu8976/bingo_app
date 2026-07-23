@@ -2,6 +2,8 @@
 
 import com.bingo.app.logic.FitnessSummaryCalculator
 import com.bingo.app.model.ExerciseRecord
+import com.bingo.app.model.FollowAlongVideo
+import com.bingo.app.model.StrengthBodyArea
 import com.bingo.app.model.TodayFitnessSummary
 import com.bingo.app.model.TrainingOption
 import java.time.LocalDate
@@ -47,6 +49,89 @@ object MockBingoData {
     )
 
     val recommendedTraining = trainingTypes[1]
+
+    val strengthBodyAreas = listOf(
+        StrengthBodyArea(
+            id = "arms",
+            title = "手臂",
+            subtitle = "肱二头肌、肱三头肌与前臂",
+            focus = "改善手臂力量和线条",
+            videos = listOf(
+                FollowAlongVideo("arms_curl", "站姿弯举节奏练", 45, "入门", "手肘贴近身体，收紧核心。", listOf("双臂自然下垂", "屈肘向上弯举", "慢速还原")),
+                FollowAlongVideo("arms_triceps", "窄距推墙臂屈伸", 52, "进阶", "身体保持直线，不要耸肩。", listOf("双手窄距撑墙", "屈肘靠近墙面", "发力推回起点"))
+            )
+        ),
+        StrengthBodyArea(
+            id = "shoulders",
+            title = "肩部",
+            subtitle = "三角肌前束、中束与后束",
+            focus = "提升肩部稳定和上肢姿态",
+            videos = listOf(
+                FollowAlongVideo("shoulders_press", "徒手肩推激活", 40, "入门", "肋骨回收，手臂沿身体两侧上推。", listOf("屈肘打开手臂", "头顶伸直双臂", "控制下落")),
+                FollowAlongVideo("shoulders_raise", "侧平举脉冲练", 50, "进阶", "手臂抬至肩高，肩膀远离耳朵。", listOf("双臂侧平举", "小幅向上脉冲", "缓慢放下放松"))
+            )
+        ),
+        StrengthBodyArea(
+            id = "chest",
+            title = "胸部",
+            subtitle = "胸大肌、胸小肌与推力链",
+            focus = "增强上肢推力和胸部控制",
+            videos = listOf(
+                FollowAlongVideo("chest_wall_push", "站姿推墙练习", 48, "入门", "头、背、髋保持一条直线。", listOf("双手撑墙略宽于肩", "屈肘靠近墙面", "胸部发力推开")),
+                FollowAlongVideo("chest_knee_push", "跪姿俯卧撑节奏练", 55, "进阶", "核心收紧，手肘斜向身体后侧。", listOf("跪姿支撑准备", "胸口下降", "推起并呼气"))
+            )
+        ),
+        StrengthBodyArea(
+            id = "back",
+            title = "背部",
+            subtitle = "背阔肌、斜方肌与竖脊肌",
+            focus = "改善背部力量和含胸姿态",
+            videos = listOf(
+                FollowAlongVideo("back_pull", "徒手下拉夹背", 42, "入门", "想象把手肘拉向裤兜。", listOf("双臂举过头顶", "屈肘向下拉", "夹背停留一秒")),
+                FollowAlongVideo("back_swimmer", "俯卧游泳式", 56, "进阶", "颈部保持延伸，不要猛抬头。", listOf("俯卧伸展四肢", "对侧手脚抬起", "交替切换"))
+            )
+        ),
+        StrengthBodyArea(
+            id = "abs",
+            title = "腹部",
+            subtitle = "腹直肌、腹斜肌与深层核心",
+            focus = "加强躯干稳定和腹部控制",
+            videos = listOf(
+                FollowAlongVideo("abs_dead_bug", "死虫式核心激活", 54, "入门", "腰背贴地，动作慢而稳定。", listOf("仰卧抬起四肢", "伸展对侧手脚", "收回后换边")),
+                FollowAlongVideo("abs_plank", "短时平板支撑", 38, "进阶", "收紧臀腹，避免塌腰或抬髋。", listOf("肘撑建立直线", "持续均匀呼吸", "膝盖落地放松"))
+            )
+        ),
+        StrengthBodyArea(
+            id = "glutes",
+            title = "臀部 / 髋部",
+            subtitle = "臀大肌、臀中肌与髋部稳定肌",
+            focus = "增强髋部稳定和臀肌发力",
+            videos = listOf(
+                FollowAlongVideo("glutes_bridge", "臀桥顶峰收缩", 50, "入门", "脚跟踩稳，顶起时不要过度挺腰。", listOf("仰卧屈膝准备", "臀部发力抬髋", "顶峰停顿后落下")),
+                FollowAlongVideo("glutes_abduction", "站姿髋外展", 58, "进阶", "骨盆保持正向，脚尖朝前。", listOf("单脚稳定站立", "另一侧腿向外抬", "控制收回并换边"))
+            )
+        ),
+        StrengthBodyArea(
+            id = "legs",
+            title = "腿部",
+            subtitle = "股四头肌、腘绳肌与小腿",
+            focus = "提升下肢力量和膝踝稳定",
+            videos = listOf(
+                FollowAlongVideo("legs_squat", "自重深蹲节奏练", 45, "入门", "膝盖对准脚尖，重心落在全脚掌。", listOf("双脚与肩同宽", "屈髋屈膝下蹲", "脚掌发力站起")),
+                FollowAlongVideo("legs_lunge", "交替后撤弓步", 57, "进阶", "前侧膝盖稳定，躯干保持直立。", listOf("自然站立准备", "单腿向后撤步", "回正后左右交替"))
+            )
+        ),
+        StrengthBodyArea(
+            id = "full_body",
+            title = "全身",
+            subtitle = "上下肢与核心协同",
+            focus = "用短组合唤醒全身肌群",
+            videos = listOf(
+                FollowAlongVideo("full_body_combo", "深蹲推举组合", 55, "入门", "先稳定下蹲，再连贯向上推举。", listOf("完成一次深蹲", "站起同时双臂上推", "回到起点重复")),
+                FollowAlongVideo("full_body_bear", "熊爬肩碰节奏练", 58, "进阶", "膝盖离地少许，骨盆保持稳定。", listOf("四点支撑抬膝", "交替触碰对侧肩", "放下膝盖短暂休息"))
+            )
+        )
+    )
 
     val communityTabs = listOf("放纵餐", "训练日餐", "好物分享", "训练打卡")
 

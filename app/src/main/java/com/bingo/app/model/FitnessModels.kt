@@ -46,6 +46,28 @@ data class TrainingOption(
     val estimatedCalories: Int
 )
 
+data class StrengthBodyArea(
+    val id: String,
+    val title: String,
+    val subtitle: String,
+    val focus: String,
+    val videos: List<FollowAlongVideo>
+)
+
+data class FollowAlongVideo(
+    val id: String,
+    val title: String,
+    val durationSeconds: Int,
+    val intensity: String,
+    val instruction: String,
+    val cues: List<String>
+) {
+    init {
+        require(durationSeconds in 1..60) { "跟练视频时长必须在 1 到 60 秒之间" }
+        require(cues.isNotEmpty()) { "跟练视频至少需要一条动作提示" }
+    }
+}
+
 enum class FatMonsterState {
     Normal,
     Lazy,
